@@ -185,8 +185,12 @@ export function prefixLink(prefix: string | null | undefined, link: string | nul
     if (prefix == null || link == null) {
         return ''
     }
-    if (/^(https?:)?\/\//.test(link)) {
-        return link
+    const href = link.trim()
+    if (/^(?:javascript|data|vbscript):/i.test(href)) {
+        return ''
     }
-    return `/${prefix.replace(/\/+$/, '')}/${link.replace(/^\/+/, '')}`
+    if (/^(?:[a-z][a-z\d+.-]*:|\/\/|#|\?)/i.test(href)) {
+        return href
+    }
+    return `/${prefix.replace(/\/+$/, '')}/${href.replace(/^\/+/, '')}`
 }
