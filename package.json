@@ -25,6 +25,7 @@
     "@platejs/markdown": "^53.3.12",
     "@platejs/media": "^53.1.4",
     "@platejs/suggestion": "^53.2.3",
+    "@platejs/table": "^53.0.9",
     "@platejs/yjs": "^53.2.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",

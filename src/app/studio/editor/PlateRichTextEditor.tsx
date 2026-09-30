@@ -13,6 +13,7 @@ import { YjsPlugin } from '@platejs/yjs/react'
 import { CursorEditor, relativeRangeToSlateRange, type CursorState } from '@slate-yjs/core'
 import { toggleBulletedList, toggleNumberedList } from '@platejs/list-classic'
 import { upsertLink } from '@platejs/link'
+import { TablePlugin } from '@platejs/table/react'
 import type { Image } from '@/generated/prisma/browser'
 import { Button, Dropdown, DropdownItem, Modal, ModalBody, ModalFooter, ModalHeader, TextInput } from 'flowbite-react'
 import {
@@ -33,6 +34,7 @@ import {
     HiPencilSquare,
     HiPhoto,
     HiStrikethrough,
+    HiTableCells,
     HiUnderline
 } from 'react-icons/hi2'
 import { HELIUM_PLATE_EDITOR_PLUGINS } from '@/app/lib/plate/plate-editor-config'
@@ -638,6 +640,16 @@ export default function PlateRichTextEditor({
                                     </ToolbarButton>
                                     <ToolbarButton label="插入图片" onClick={() => setShowMediaLibrary(true)}>
                                         <HiPhoto className="h-4 w-4" aria-hidden="true"/>
+                                    </ToolbarButton>
+                                    <ToolbarButton label="插入表格" onClick={() => {
+                                        editor.getTransforms(TablePlugin).insert.table({
+                                            rowCount: 3,
+                                            colCount: 3,
+                                            header: true
+                                        })
+                                        editor.tf.focus()
+                                    }}>
+                                        <HiTableCells className="h-4 w-4" aria-hidden="true"/>
                                     </ToolbarButton>
                                     <ToolbarButton highlighted={suggestions.length > 0}
                                                    label={`建议, ${suggestions.length} 条待处理`}

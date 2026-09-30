@@ -225,6 +225,18 @@ article img {
     @apply mb-6;
 }
 
+.content-entity-article table p {
+    @apply mb-0 leading-6;
+}
+
+.helium-plate-table tr > :not(:last-child) {
+    border-right: 1px solid var(--color-gray-200);
+}
+
+.helium-plate-table tr:not(:last-child) > * {
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
 .content-entity-article h1 {
     @apply text-4xl leading-tight tracking-tight;
 }

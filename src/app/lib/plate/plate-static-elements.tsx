@@ -1,5 +1,6 @@
 import { SlateElement, SlateLeaf, type SlateElementProps, type SlateLeafProps } from 'platejs/static'
-import type { TImageElement, TLinkElement } from 'platejs'
+import type { TImageElement, TLinkElement, TTableCellElement, TTableElement } from 'platejs'
+import { getColSpan, getRowSpan } from '@platejs/table'
 
 export const ParagraphStatic = (props: SlateElementProps) =>
     <SlateElement {...props} as="p" className="mb-4 w-full leading-7 last:mb-0"/>
@@ -37,6 +38,40 @@ export const ListItemContentStatic = (props: SlateElementProps) => <SlateElement
 export const LinkStatic = (props: SlateElementProps<TLinkElement>) =>
     <SlateElement {...props} as="a" attributes={{ ...props.attributes, href: props.element.url }}
                   className="text-blue-600 underline decoration-blue-300 underline-offset-2"/>
+
+export const TableStatic = ({ children, ...props }: SlateElementProps<TTableElement>) =>
+    <div className="my-5 w-full overflow-hidden rounded-xl border border-gray-200">
+        <div className="overflow-x-auto">
+            <SlateElement {...props} as="table"
+                          className="helium-plate-table w-full min-w-[24rem] border-separate border-spacing-0 text-left text-sm">
+                {props.element.colSizes && <colgroup>
+                    {props.element.colSizes.map((width, index) => <col key={index} style={{ width }}/>)}
+                </colgroup>}
+                <tbody>{children}</tbody>
+            </SlateElement>
+        </div>
+    </div>
+
+export const TableRowStatic = (props: SlateElementProps) => <SlateElement {...props} as="tr"/>
+
+function TableCellStaticBase({ as, ...props }: SlateElementProps<TTableCellElement> & { as: 'td' | 'th' }) {
+    return <SlateElement {...props} as={as}
+                         attributes={{
+                             ...props.attributes,
+                             colSpan: getColSpan(props.element),
+                             rowSpan: getRowSpan(props.element),
+                             ...(as === 'th' ? { scope: 'col' as const } : {})
+                         }}
+                         className={`min-w-28 px-3 py-2 align-top [&>p]:mb-0 ${
+                             as === 'th' ? 'bg-gray-50 font-semibold' : 'bg-white'
+                         }`}/>
+}
+
+export const TableCellStatic = (props: SlateElementProps<TTableCellElement>) =>
+    <TableCellStaticBase {...props} as="td"/>
+
+export const TableCellHeaderStatic = (props: SlateElementProps<TTableCellElement>) =>
+    <TableCellStaticBase {...props} as="th"/>
 
 function isImageNode(candidate: unknown): candidate is TImageElement & {
     imageHeight?: number

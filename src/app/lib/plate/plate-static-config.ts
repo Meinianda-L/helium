@@ -20,6 +20,7 @@ import {
 } from '@platejs/basic-nodes'
 import { BaseLinkPlugin } from '@platejs/link'
 import { BaseImagePlugin } from '@platejs/media'
+import { BaseTableCellHeaderPlugin, BaseTableCellPlugin, BaseTablePlugin, BaseTableRowPlugin } from '@platejs/table'
 import {
     BaseBulletedListPlugin,
     BaseListItemContentPlugin,
@@ -57,6 +58,10 @@ import {
     StrikethroughStatic,
     SubscriptStatic,
     SuperscriptStatic,
+    TableCellHeaderStatic,
+    TableCellStatic,
+    TableRowStatic,
+    TableStatic,
     UnderlineStatic
 } from '@/app/lib/plate/plate-static-elements'
 import { EMPTY_PLATE_VALUE, type HeliumPlateValue } from '@/app/lib/plate/plate-types'
@@ -82,6 +87,10 @@ export const HELIUM_PLATE_STATIC_PLUGINS = [
     BaseUnderlinePlugin.withComponent(UnderlineStatic),
     BaseLinkPlugin.withComponent(LinkStatic),
     BaseImagePlugin.withComponent(ImageStatic),
+    BaseTablePlugin.withComponent(TableStatic),
+    BaseTableRowPlugin.withComponent(TableRowStatic),
+    BaseTableCellPlugin.withComponent(TableCellStatic),
+    BaseTableCellHeaderPlugin.withComponent(TableCellHeaderStatic),
     BaseListPlugin,
     BaseBulletedListPlugin.withComponent(BulletedListStatic),
     BaseNumberedListPlugin.withComponent(NumberedListStatic),

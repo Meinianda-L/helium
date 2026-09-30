@@ -11,12 +11,14 @@ import {
     usePath,
     useSelected
 } from 'platejs/react'
-import type { TImageElement, TLinkElement } from 'platejs'
+import type { TImageElement, TLinkElement, TTableCellElement, TTableElement } from 'platejs'
 import type { Image } from '@/generated/prisma/browser'
 import { Button } from 'flowbite-react'
 import { HiTrash } from 'react-icons/hi2'
 import { getCommentKeyId, getCommentKeys } from '@platejs/comment'
 import { getInlineSuggestionData } from '@platejs/suggestion'
+import { getColSpan, getRowSpan } from '@platejs/table'
+import { TablePlugin, useIsCellSelected } from '@platejs/table/react'
 
 const PlateMediaContext = createContext<{
     images: Map<number, Image>
@@ -135,6 +137,70 @@ export const ListItemContentElement = (props: PlateElementProps) => <PlateElemen
 export const LinkElement = (props: PlateElementProps<TLinkElement>) =>
     <PlateElement {...props} as="a" attributes={{ ...props.attributes, href: props.element.url }}
                   className="text-blue-600 underline decoration-blue-300 underline-offset-2"/>
+
+function TableAction({ children, color = 'alternative', onClick }: {
+    children: ReactNode
+    color?: 'alternative' | 'red'
+    onClick: () => void
+}) {
+    return <Button pill size="xs" color={color} type="button"
+                   onMouseDown={event => event.preventDefault()} onClick={onClick}>
+        {children}
+    </Button>
+}
+
+export const TableElement = ({ children, ...props }: PlateElementProps<TTableElement>) => {
+    const editor = useEditorRef()
+    const selected = useSelected()
+    const readOnly = useEditorReadOnly()
+    const table = editor.getTransforms(TablePlugin)
+    const editTable = (action: () => void) => {
+        action()
+        editor.tf.focus()
+    }
+
+    return <div className="my-5 w-full overflow-hidden rounded-xl border border-gray-200">
+        {selected && !readOnly && <div contentEditable={false}
+                                       className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-2">
+            <TableAction onClick={() => editTable(() => table.insert.tableRow({ header: false }))}>添加行</TableAction>
+            <TableAction onClick={() => editTable(() => table.insert.tableColumn())}>添加列</TableAction>
+            <TableAction onClick={() => editTable(() => table.remove.tableRow())}>删除行</TableAction>
+            <TableAction onClick={() => editTable(() => table.remove.tableColumn())}>删除列</TableAction>
+            <TableAction color="red" onClick={() => editTable(() => table.remove.table())}>删除表格</TableAction>
+        </div>}
+        <div className="overflow-x-auto">
+            <PlateElement {...props} as="table"
+                          className="helium-plate-table w-full min-w-[24rem] border-separate border-spacing-0 text-left text-sm">
+                {props.element.colSizes && <colgroup contentEditable={false}>
+                    {props.element.colSizes.map((width, index) => <col key={index} style={{ width }}/>)}
+                </colgroup>}
+                <tbody>{children}</tbody>
+            </PlateElement>
+        </div>
+    </div>
+}
+
+export const TableRowElement = (props: PlateElementProps) => <PlateElement {...props} as="tr"/>
+
+function TableCell({ as, ...props }: PlateElementProps<TTableCellElement> & { as: 'td' | 'th' }) {
+    const selected = useIsCellSelected(props.element)
+    return <PlateElement {...props} as={as}
+                         attributes={{
+                             ...props.attributes,
+                             colSpan: getColSpan(props.element),
+                             rowSpan: getRowSpan(props.element),
+                             ...(as === 'th' ? { scope: 'col' as const } : {})
+                         }}
+                         className={`min-w-28 px-3 py-2 align-top [&>p]:mb-0 ${
+                             as === 'th' ? 'bg-gray-50 font-semibold' : 'bg-white'
+                         } ${selected ? '!bg-blue-50' : ''}`}/>
+}
+
+export const TableCellElement = (props: PlateElementProps<TTableCellElement>) =>
+    <TableCell {...props} as="td"/>
+
+export const TableCellHeaderElement = (props: PlateElementProps<TTableCellElement>) =>
+    <TableCell {...props} as="th"/>
 
 function isImageNode(candidate: unknown): candidate is TImageElement & { imageId?: number } {
     return candidate != null && typeof candidate === 'object' && 'type' in candidate && candidate.type === 'img'

@@ -31,6 +31,7 @@ import {
 import { toggleBulletedList, toggleNumberedList } from '@platejs/list-classic'
 import { MarkdownPlugin } from '@platejs/markdown'
 import { ImagePlugin } from '@platejs/media/react'
+import { TableCellHeaderPlugin, TableCellPlugin, TablePlugin, TableRowPlugin } from '@platejs/table/react'
 import { CommentPlugin } from '@platejs/comment/react'
 import { SuggestionPlugin } from '@platejs/suggestion/react'
 import {
@@ -65,6 +66,10 @@ import {
     SubscriptLeaf,
     SuggestionLeaf,
     SuperscriptLeaf,
+    TableCellElement,
+    TableCellHeaderElement,
+    TableElement,
+    TableRowElement,
     UnderlineLeaf
 } from '@/app/lib/plate/plate-elements'
 import { EMPTY_PLATE_VALUE, type HeliumPlateValue } from '@/app/lib/plate/plate-types'
@@ -131,6 +136,10 @@ export const HELIUM_PLATE_EDITOR_PLUGINS = [
     UnderlinePlugin.withComponent(UnderlineLeaf),
     LinkPlugin.withComponent(LinkElement),
     ImagePlugin.withComponent(ImageElement),
+    TablePlugin.withComponent(TableElement),
+    TableRowPlugin.withComponent(TableRowElement),
+    TableCellPlugin.withComponent(TableCellElement),
+    TableCellHeaderPlugin.withComponent(TableCellHeaderElement),
     CommentPlugin.withComponent(CommentLeaf),
     SuggestionPlugin.withComponent(SuggestionLeaf),
     ListPlugin,
