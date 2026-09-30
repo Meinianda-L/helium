@@ -48,7 +48,8 @@ BA 大讲堂: BA Lectures
 北中小讲师: BAID Speaker
 世界大课堂: BA Global Classroom
 阅历课程: Experiential Program
-北京文化探究: Beijing Cultural Exploration
+中华文化寻根之旅: Chinese Traditional Culture Exploration
+北京文化探究: Beijing Culture Exploration
 职业体验: Career Experiences
 英才学者: Elite Scholar
 世界因我更美好: Better Me, Better World
@@ -61,6 +62,10 @@ BA 大讲堂: BA Lectures
 选修课: Electives
 年度人物: Student of the Year
 月度人物: Student of the Month
+创新创造 (月度人物): Innovator of the Month
+社区贡献 (月度人物): Community Contributor of the Month
+才艺体育 (月度人物): Talent & Sports Star of the Month
+学术卓越 (月度人物): Academic Achiever of the Month
 周慧: Zhou Hui
 慧校: Ms. Zhou (Principal Zhou, 如果适合的话)
 校长特别奖: Principal's Special Award
@@ -103,6 +108,13 @@ EOT 经济竞赛 (指课程): Economics Olympiad Team
 北中杯: BA Cup
 北中小舞台: BAID's Got Talent
 露营: Camping
+学委会: Students' Union
+主席 (学委会职务): President
+副主席 (学委会职务): Vice President
+活动部长 (学委会): Secretary of the Activities Department
+宣传部长 (学委会): Secretary of the Publicity Department
+文体部长 (学委会): Secretary of the Recreation and Sports Department
+学术部长 (学委会): Secretary of the Academics Department
 `
 
 export const SANITIZE_LITERAL = `
