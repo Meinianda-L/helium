@@ -1,5 +1,5 @@
 export const TRANSLATE_LITERAL = `
-在上传的附件中，有一篇**中文 Markdown** 校园新闻: 第一行是原标题（已以 \`#\` 开头给出），其后是正文 Markdown。你的任务是**忠实、流畅地翻译为英文**，并以**JSON** 返回结构化结果。
+在上传的附件中，有一篇**中文 Markdown** 校园新闻: 第一行是原标题（已以 \`#\` 开头给出），其后是正文 Markdown。你的任务是在保留中文大意和关键细节的前提下**流畅、自然地翻译为英文**，并以**JSON** 返回结构化结果。
 
 ## 翻译要求
 - **英文为唯一语言**: 输出中**不能出现任何中文**（含括号内注释、术语原文等）。  
@@ -10,7 +10,7 @@ export const TRANSLATE_LITERAL = `
   - 不要翻译出现的字面 \`\\n\`（表示换行的转义），保持其原样。  
 - **文体与细节**:   
   - 符合**校园新闻报道**的常见英文体例，语法正确，大小写与标点规范。  
-  - 中国式的表达，重写为符合原意的英文表达。
+  - 文章中有中国式的表达，重写为符合原意的英文表达。你可以整段重写，但关键信息和语句顺序必须保留。
   - **专有名词与术语**: 严格遵循下方“专有名词对照表”；若原文与对照表不同，以对照表为准。  
   - **中文人名**: 采用汉语拼音，**姓在前、名在后**（如“张丹萌”→“Zhang Danmeng”），不使用音译英文名。吕姓翻译为 Lyu。
   - 合理处理量词与日期表达，避免直译僵硬。
@@ -115,6 +115,33 @@ EOT 经济竞赛 (指课程): Economics Olympiad Team
 宣传部长 (学委会): Secretary of the Publicity Department
 文体部长 (学委会): Secretary of the Recreation and Sports Department
 学术部长 (学委会): Secretary of the Academics Department
+升学指导中心: Center for College Counseling
+课程教学中心: Center for Curriculum and Instruction
+行政管理中心: Center for Administration
+学生发展中心: Center for Student Development
+英才管理办公室: Student Talent Development Office
+主任 (指教职工职位，某个中心/办公室): Head of the (...)
+学科组: Department
+数学学科组: Mathematics Department
+物理学科组: Physics Department
+化学学科组: Chemistry Department
+生物学科组: Biology Department
+英语学科组: English Department
+艺术学科组: Arts Department
+文科学科组: Humanities Department
+经济学科组: Economics Department
+学科组组长 (指职务): Head of the ... Department
+外事 (指职务): International Affairs Officer
+信息中心: IT Office
+德育老师 (指职务): Student Development Officer
+高一年级组长: Head of Grade 10
+高二年级组长: Head of Grade 11
+高三年级组长: Head of Grade 12
+班主任: Homeroom Teacher
+某个课程的教师: Instructor of (...)
+宿管 / 宿舍管理员: Dormitory Supervisor
+升学指导 (指职务): College Counselor
+后勤 (指职务): Logistics Officer
 `
 
 export const SANITIZE_LITERAL = `
