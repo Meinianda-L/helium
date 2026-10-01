@@ -101,8 +101,8 @@ EOT 经济竞赛 (指课程): Economics Olympiad Team
 「丝绸之路」之跨学科探索 (指课程): Silk Road Exploration
 近现代物理 (指课程): Modern Physics
 版画 (指课程): Printmaking
-升学指导: College Counseling
-班会: Homeroom
+升学指导 (指课程): College Counseling
+班会 (指课程): Homeroom
 戏剧节: Drama Festival
 北中好声音: Sing! BA
 北中杯: BA Cup
