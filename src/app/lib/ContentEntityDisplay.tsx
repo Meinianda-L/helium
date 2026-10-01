@@ -27,17 +27,32 @@ export default function ContentEntityDisplay({
     const displayDate = typeof createdAt === 'string' ? new Date(createdAt) : createdAt
 
     return <>
-        <If condition={coverImage != null}>
+        <If condition={isPeoplePage}>
+            <header className="mx-auto w-full max-w-5xl px-6 pt-32 sm:px-10 sm:pt-40">
+                <div
+                    className="flex flex-col gap-7 border-b border-gray-900 pb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-10">
+                    <h1 className="min-w-0 text-left text-4xl leading-tight tracking-tight sm:text-6xl">
+                        <p lang={locale}
+                           className={`font-bold ${locale === 'zh' ? 'text-[0.85em] tracking-wide' : ''}`}>{title}</p>
+                        {subtitle && <p lang={locale === 'en' ? 'zh' : 'en'}
+                                        className={`mt-2 opacity-80 ${locale === 'en' ? 'text-[0.425em] tracking-normal' : 'text-[0.5em]'}`}>{subtitle}</p>}
+                    </h1>
+                    {coverImage && <img
+                        className="mx-auto h-auto w-auto max-h-80 max-w-[min(100%,18rem)] shrink-0 object-contain sm:mx-0 sm:max-h-56 sm:max-w-48"
+                        alt={coverImage.altText ?? ''}
+                        src={`${uploadPrefix}/${coverImage.sha1}.webp`}/>}
+                </div>
+            </header>
+        </If>
+        <If condition={!isPeoplePage && coverImage != null}>
             <div className="mx-auto w-full max-w-5xl px-4 pt-24 sm:px-8 sm:pt-28">
-                <img className={isPeoplePage
-                    ? 'mx-auto h-72 w-72 rounded-full object-cover'
-                    : 'max-h-[24rem] h-auto w-full rounded-2xl object-cover'}
+                <img className="max-h-[24rem] h-auto w-full rounded-2xl object-cover"
                      alt={coverImage?.altText ?? ''}
                      src={`${uploadPrefix}/${coverImage?.sha1}.webp`}/>
             </div>
         </If>
-        <div className={`mx-auto mb-14 w-full max-w-3xl px-6 sm:mb-20 sm:px-10 ${
-            coverImage == null ? 'pt-32 sm:pt-40' : 'pt-12 sm:pt-16'
+        <div className={`mx-auto mb-14 w-full px-6 sm:mb-20 sm:px-10 ${isPeoplePage ? 'max-w-5xl' : 'max-w-3xl'} ${
+            isPeoplePage ? '' : coverImage == null ? 'pt-32 sm:pt-40' : 'pt-12 sm:pt-16'
         }`}>
             <article className="content-entity-article">
                 <If condition={type === EntityType.post}>
@@ -49,11 +64,8 @@ export default function ContentEntityDisplay({
                         </time>
                     </header>
                 </If>
-                <If condition={type !== EntityType.post}>
+                <If condition={!isPeoplePage && type !== EntityType.post}>
                     <h1 className="text-5xl text-center">{title}</h1>
-                    <If condition={isPeoplePage && subtitle != null}>
-                        <p className="mt-3 text-center text-2xl text-gray-600">{subtitle}</p>
-                    </If>
                 </If>
                 <ContentEntityBody content={content} images={images} uploadPrefix={uploadPrefix}/>
             </article>
