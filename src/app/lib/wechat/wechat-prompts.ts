@@ -14,6 +14,8 @@ export const TRANSLATE_LITERAL = `
   - **专有名词与术语**: 严格遵循下方“专有名词对照表”；若原文与对照表不同，以对照表为准。  
   - **中文人名**: 采用汉语拼音，**姓在前、名在后**（如“张丹萌”→“Zhang Danmeng”），不使用音译英文名。吕姓翻译为 Lyu。
   - 合理处理量词与日期表达，避免直译僵硬。
+  - 中文的一段可能在英文中需要翻译为多段，请根据英文阅读习惯适当拆分段落。
+  - 活动名称和其他适宜场景可用斜体表示。
 
 ## 输出字段
 - \`content\`: 英文正文（不含主标题），保持 Markdown 结构与图片。  
@@ -30,11 +32,15 @@ export const TRANSLATE_LITERAL = `
 - 不要输出任何解释性文字、提示或多余字符。  
 - 不要在 JSON 外再包裹 Markdown/代码围栏。  
 - 不要混用中英文本；**只输出英文内容**（除非为图片链接、\`\\n\` 字面量等要求保留的非英文字符）。
+- 不要用 "prestigious universities," "prestigious colleges," "elite universities," "elite colleges" 指中文中的 "名校"；请用 "top universities" 或 "top colleges"。
+- 使用正式的语言，禁止口语化表达 (例如 "kick off" 应改为 "launch")。
+- 不要用 "comprehensive" 来翻译中文中的 "综合"；请根据上下文使用 "integrated"、"combined"、"holistic" 等更贴切的词汇。
 
 专有名词:
 北京中学 Beijing Academy
-北京中学国际部 Beijing Academy International Division (尽量缩写为 BAID，标题中必须缩写为 BAID)
-北中外籍人员子女学校: International School of Beijing Academy (尽量缩写为 ISBA，标题中必须缩写为 ISBA)
+北京中学国际部 Beijing Academy International Division (总是缩写为 BAID，标题中必须缩写为 BAID)
+国际部: BAID
+北中外籍人员子女学校: International School of Beijing Academy (总是缩写为 ISBA，标题中必须缩写为 ISBA)
 毕业生故事: #GraduateStory
 毕业生特辑: #GraduateFeature
 喜报: #Congrats
@@ -108,6 +114,7 @@ EOT 经济竞赛 (指课程): Economics Olympiad Team
 北中杯: BA Cup
 北中小舞台: BAID's Got Talent
 露营: Camping
+爱心社: BAID Humanity Club
 学委会: Students' Union
 主席 (学委会职务): President
 副主席 (学委会职务): Vice President
@@ -115,6 +122,7 @@ EOT 经济竞赛 (指课程): Economics Olympiad Team
 宣传部长 (学委会): Secretary of the Publicity Department
 文体部长 (学委会): Secretary of the Recreation and Sports Department
 学术部长 (学委会): Secretary of the Academics Department
+全球视野阅读营: Global Vision Reading Camp
 升学指导中心: Center for College Counseling
 课程教学中心: Center for Curriculum and Instruction
 行政管理中心: Center for Administration
@@ -142,13 +150,30 @@ EOT 经济竞赛 (指课程): Economics Olympiad Team
 宿管 / 宿舍管理员: Dormitory Supervisor
 升学指导 (指职务): College Counselor
 后勤 (指职务): Logistics Officer
+中国香港地区: Hong Kong SAR China
+中国澳门地区: Macao SAR China
+中国台湾: Taiwan, China
+集团化办学模式: education group model
+报告厅: assembly hall
+礼堂: auditorium
+德胜楼: Desheng Building
+广安楼: Guang'an Building
+永定楼: Yongding Building
+乐辰楼: Lechen Building
+智渊楼: Zhiyuan Building
+勇岳楼: Yongyue Building
+仁光楼: Renguang Building
+和美楼: Hemei Building
+朝阳楼: Chaoyang Building
+崇文楼: Chongwen Building
+宣武楼: Xuanwu Building
 `
 
 export const SANITIZE_LITERAL = `
 在上传的附件中，有一段**中文 Markdown** 文本，由微信公众号内容转换而来。请对其进行**清理与结构化输出**，并按以下要求返回**JSON**: 
 
 ## 任务
-1) **去除装饰性元素**: 删除与正文无关的装饰文字、页眉/页脚、水印、作者名片、引导关注/点赞/转发等提示，删除文章主标题、公众号名称与日期等版头信息。  
+1) **去除装饰性元素**: 删除与正文无关的装饰文字、页眉/页脚、水印、作者名片、引导关注/点赞/转发等提示，删除文章主标题、公众号名称与日期等版头信息。如果文章结尾有 "END" 字样，删除。如果文章结尾有审核人员或撰稿人信息，删除。
 2) **保留正文与图片**: 正文中的图片属于内容的一部分，需要保留其 **Markdown 图片语法**。  
 3) **规范化与排版**: 在不改变原意的前提下，适度改善排版 (如合理添加小标题、列表、加粗等)，但**不要把文章主标题作为正文标题**加入到 content 中。
 4) **空格**: 在中文与英文、数字之间添加空格 (如"BA大讲堂"改为"BA 大讲堂")，但不要在纯中文或纯英文词组内添加空格。
