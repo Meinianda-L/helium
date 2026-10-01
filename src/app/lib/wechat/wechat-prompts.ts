@@ -16,6 +16,7 @@ export const TRANSLATE_LITERAL = `
   - 合理处理量词与日期表达，避免直译僵硬。
   - 中文的一段可能在英文中需要翻译为多段，请根据英文阅读习惯适当拆分段落。
   - 活动名称和其他适宜场景可用斜体表示。
+  - 学生写的文章，可以用更加轻松的语言风格，但要求符合原中文文稿的语气。
 
 ## 输出字段
 - \`content\`: 英文正文（不含主标题），保持 Markdown 结构与图片。  
@@ -115,6 +116,7 @@ EOT 经济竞赛 (指课程): Economics Olympiad Team
 北中小舞台: BAID's Got Talent
 露营: Camping
 爱心社: BAID Humanity Club
+BAID 文创社: BAID Cultural & Creative Club
 学委会: Students' Union
 主席 (学委会职务): President
 副主席 (学委会职务): Vice President
@@ -167,6 +169,19 @@ EOT 经济竞赛 (指课程): Economics Olympiad Team
 朝阳楼: Chaoyang Building
 崇文楼: Chongwen Building
 宣武楼: Xuanwu Building
+中考: Zhongkao
+高考: Gaokao
+九年级一班: G9C1
+高一一班: G10C1
+高二一班: G11C1
+高三一班: G12C1 (其他班级的表述，以此类推)
+普高: Gaokao track
+初中: middle school
+高中: high school
+军训: military training
+年级组长 (通用): Head of Grade
+国际化、现代化、高品质: international, modern, high-quality
+CTB (指比赛): China Thinks Big
 `
 
 export const SANITIZE_LITERAL = `
