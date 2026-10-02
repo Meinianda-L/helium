@@ -83,7 +83,7 @@ export function createHeliumMcpHandler(actor: OperationActor, bearerToken: strin
                     error: { code: 'invalid_input', message: 'Check the supplied arguments.' }
                 }, true)
             }
-            console.error('Helium MCP operation failed')
+            console.error('Helium MCP operation failed', { userId: actor.userId }, error)
             return result({
                 ok: false,
                 error: { code: 'storage_unavailable', message: 'The operation could not complete. Retry later.' }

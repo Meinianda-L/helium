@@ -243,6 +243,14 @@ const server = new Server({
             throw null
         }
         if (path === '/mcp/editor') {
+            const startedAt = Date.now()
+            const requestId = typeof request.headers['x-mcp-request-id'] === 'string'
+                ? request.headers['x-mcp-request-id'].slice(0, 100) : undefined
+            const context = {
+                requestId, action: payload.action, entityId: payload.input?.entityId,
+                editor: payload.input?.editor, language: payload.input?.language, userId: payload.actor?.userId
+            }
+            console.info('MCP editor coordinator request received', context)
             try {
                 if (![ 'read', 'edit', 'replace' ].includes(payload.action) || !payload.input ||
                     ![ 'plate', 'puck' ].includes(payload.input.editor) ||
@@ -266,9 +274,18 @@ const server = new Server({
                 })
                 response.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
                 response.end(JSON.stringify(result))
+                console.info('MCP editor coordinator request completed', {
+                    ...context,
+                    durationMs: Date.now() - startedAt,
+                    ok: result.ok,
+                    errorCode: result.error?.code
+                })
             } catch (error) {
                 if (error === null) throw null
-                console.error('MCP editor coordinator failed:', error)
+                console.error('MCP editor coordinator failed:', {
+                    ...context,
+                    durationMs: Date.now() - startedAt
+                }, error)
                 response.writeHead(503)
                 response.end(JSON.stringify({
                     ok: false,
