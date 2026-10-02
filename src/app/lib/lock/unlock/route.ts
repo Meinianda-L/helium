@@ -14,7 +14,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             entityId: data.entityId,
             token: data.token
         })
-    } finally {
+    } catch (error) {
+        // Unlocks are fired via sendBeacon on page exit, often after the session has expired.
+        if (error instanceof Error && error.message === 'Unauthorized') {
+            return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+        }
+        throw error
     }
     return new NextResponse(null, { status: 204 })
 }
