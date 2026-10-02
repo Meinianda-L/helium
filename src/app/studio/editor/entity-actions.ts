@@ -1,7 +1,7 @@
 'use server'
 
 import { EntityType } from '@/generated/prisma/client'
-import { HydratedContentEntity, Paginated, SimplifiedContentEntity } from '@/app/lib/data-types'
+import { HydratedContentEntity, Paginated, PublicContentEntity, SimplifiedContentEntity } from '@/app/lib/data-types'
 
 import { AlignEntityResponse } from '@/app/studio/editor/entity-types'
 
@@ -24,11 +24,11 @@ export async function refreshPageData(): Promise<void> {
     return services.refreshPageData()
 }
 
-export async function getContentEntityBySlug(slug: string): Promise<HydratedContentEntity | null> {
+export async function getContentEntityBySlug(slug: string): Promise<PublicContentEntity | null> {
     return services.getContentEntityBySlug(slug)
 }
 
-export async function getPublishedContentEntity(id: number): Promise<HydratedContentEntity | null> {
+export async function getPublishedContentEntity(id: number): Promise<PublicContentEntity | null> {
     return services.getPublishedContentEntity(id)
 }
 

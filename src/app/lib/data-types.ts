@@ -160,6 +160,31 @@ export const HYDRATED_CONTENT_ENTITY_SELECT = {
     updatedAt: true
 }
 
+// Returned by unauthenticated queries: drafts and creator details must never reach visitors.
+export type PublicContentEntity = Omit<HydratedContentEntity,
+    'titleDraftEN' | 'titleDraftZH' | 'shortContentDraftEN' | 'shortContentDraftZH' |
+    'contentDraftEN' | 'contentDraftZH' | 'coverImageDraft' | 'coverImageDraftId' |
+    'transparentNavbarDraft' | 'creatorId' | 'creator'>
+
+export const PUBLIC_CONTENT_ENTITY_SELECT = {
+    id: true,
+    type: true,
+    titlePublishedEN: true,
+    titlePublishedZH: true,
+    shortContentPublishedEN: true,
+    shortContentPublishedZH: true,
+    slug: true,
+    categoryEN: true,
+    categoryZH: true,
+    contentPublishedEN: true,
+    contentPublishedZH: true,
+    coverImagePublished: true,
+    coverImagePublishedId: true,
+    transparentNavbarPublished: true,
+    createdAt: true,
+    updatedAt: true
+}
+
 export function convertDatesToStrings<T>(value: T): T {
     if (value == null) return value
     if (Object.prototype.toString.call(value) === '[object Date]') {

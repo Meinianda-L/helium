@@ -9,6 +9,8 @@ import {
     HYDRATED_CONTENT_ENTITY_SELECT,
     HydratedContentEntity,
     Paginated,
+    PUBLIC_CONTENT_ENTITY_SELECT,
+    PublicContentEntity,
     SIMPLIFIED_CONTENT_ENTITY_SELECT,
     SimplifiedContentEntity
 } from '@/app/lib/data-types'
@@ -165,19 +167,19 @@ export async function refreshPageData(): Promise<void> {
     lastRefresh = Date.now()
 }
 
-export async function getContentEntityBySlug(slug: string): Promise<HydratedContentEntity | null> {
+export async function getContentEntityBySlug(slug: string): Promise<PublicContentEntity | null> {
     if (slug === WEBSITE_METADATA_SLUG) return null
     return prisma.contentEntity.findFirst({
         where: {
             slug,
             contentPublishedEN: { not: null }
         },
-        select: HYDRATED_CONTENT_ENTITY_SELECT
+        select: PUBLIC_CONTENT_ENTITY_SELECT
     })
 }
 
 // Used by component selections; direct public routes use getContentEntityBySlug.
-export async function getPublishedContentEntity(id: number): Promise<HydratedContentEntity | null> {
+export async function getPublishedContentEntity(id: number): Promise<PublicContentEntity | null> {
     return prisma.contentEntity.findFirst({
         where: {
             linkOnly: false,
@@ -185,7 +187,7 @@ export async function getPublishedContentEntity(id: number): Promise<HydratedCon
             NOT: { slug: WEBSITE_METADATA_SLUG },
             contentPublishedEN: { not: null }
         },
-        select: HYDRATED_CONTENT_ENTITY_SELECT
+        select: PUBLIC_CONTENT_ENTITY_SELECT
     })
 }
 
