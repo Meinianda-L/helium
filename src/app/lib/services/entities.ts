@@ -291,7 +291,7 @@ export async function getPublishedContentEntities(page: number, type: EntityType
             ]
         },
         orderBy: { createdAt: 'desc' },
-        skip: page * PAGE_SIZE,
+        skip: page * effectivePageSize,
         take: effectivePageSize,
         select: SIMPLIFIED_CONTENT_ENTITY_SELECT
     })
