@@ -19,12 +19,14 @@ const nextConfig: NextConfig = {
     experimental: {
         proxyClientMaxBodySize: '250mb',
         serverActions: {
-            allowedOrigins: [
-                'isba.beijingacademy.com.cn',
-                'baid.beijingacademy.com.cn',
-                '10.85.160.111',
-                '10.85.160.111:8523'
-            ]
+            allowedOrigins: process.env.SERVER_ACTIONS_ALLOWED_ORIGINS
+                ? process.env.SERVER_ACTIONS_ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
+                : [
+                    'isba.beijingacademy.com.cn',
+                    'baid.beijingacademy.com.cn',
+                    '10.85.160.111',
+                    '10.85.160.111:8523'
+                ]
         }
     }
 }

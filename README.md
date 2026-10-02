@@ -162,6 +162,7 @@ server {
 | `HOCUSPOCUS_PORT`            | Local port for the Plate collaboration server. Defaults to `1234`.                                                                                                                                                                      |
 | `HOCUSPOCUS_INTERNAL_URL`    | Server-only HTTP base URL for MCP editor requests to Hocuspocus, such as `http://127.0.0.1:1234`. Set this to bypass the reverse proxy if you set up one in production. If omitted, requests fall back to `NEXT_PUBLIC_HOCUSPOCUS_URL`. |
 | `NEXT_PUBLIC_HOCUSPOCUS_URL` | Browser WebSocket URL for Plate collaboration, such as `ws://192.168.1.20/collaboration/`. Set this before running `npm run build`.                                                                                                     |
+| `SERVER_ACTIONS_ALLOWED_ORIGINS`| Comma-separated hosts (e.g. `example.com,10.0.0.5:8523`) allowed to call server actions when the browser origin differs from the `Host` header, such as behind a reverse proxy. Defaults to the BAID production hosts. Set this before running `npm run build`.|
 
 ## Contribution
 
