@@ -17,7 +17,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
     if (search.has('error')) {
         if (search.get('error') === 'access_denied') {
-            return NextResponse.redirect('/')
+            return NextResponse.redirect(`${process.env.HOST}/`)
         }
         return NextResponse.redirect(`${process.env.HOST}/login/error`)
     }
