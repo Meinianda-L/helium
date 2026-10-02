@@ -100,6 +100,7 @@ export const SIMPLIFIED_CONTENT_ENTITY_SELECT = {
 
 export interface HydratedContentEntity {
     id: number
+    collaborationGeneration: number
     type: EntityType
     titlePublishedEN: string | null
     titlePublishedZH: string | null
@@ -130,6 +131,8 @@ export interface HydratedContentEntity {
 
 export const HYDRATED_CONTENT_ENTITY_SELECT = {
     id: true,
+    // Part of entityRevision; without it fetched revisions never match the ones mutations check.
+    collaborationGeneration: true,
     type: true,
     titlePublishedEN: true,
     titlePublishedZH: true,
@@ -164,7 +167,7 @@ export const HYDRATED_CONTENT_ENTITY_SELECT = {
 export type PublicContentEntity = Omit<HydratedContentEntity,
     'titleDraftEN' | 'titleDraftZH' | 'shortContentDraftEN' | 'shortContentDraftZH' |
     'contentDraftEN' | 'contentDraftZH' | 'coverImageDraft' | 'coverImageDraftId' |
-    'transparentNavbarDraft' | 'creatorId' | 'creator'>
+    'transparentNavbarDraft' | 'creatorId' | 'creator' | 'collaborationGeneration'>
 
 export const PUBLIC_CONTENT_ENTITY_SELECT = {
     id: true,
