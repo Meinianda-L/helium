@@ -7,8 +7,8 @@ import { cookies, headers } from 'next/headers'
 import { ThemeProvider } from 'flowbite-react'
 
 export const metadata: Metadata = {
-    title: 'Beijing Academy International Division',
-    description: 'Beijing Academy International Division (BAID) is a CIS-member international high school program in Beijing offering AP and Cambridge curricula.'
+    title: 'Helium',
+    description: 'Helium is the new content management system for the website of Beijing Academy International Division (BAID) and the International School of Beijing Academy (ISBA).'
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -31,8 +31,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                     base: 'rounded-t-3xl',
                     popup: 'border-b-0 px-6 pb-3 pt-6'
                 },
-            footer: { base: 'rounded-b-3xl' }
-        } }}>
+                footer: { base: 'rounded-b-3xl' }
+            }
+        }}>
             {children}
         </ThemeProvider>
         </body>
