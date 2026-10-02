@@ -9,7 +9,7 @@ import { getStudioActor } from '@/app/lib/services/studio-actor'
 import * as services from '@/app/lib/services/entities'
 
 export async function getRecentEntities(type: EntityType): Promise<SimplifiedContentEntity[]> {
-    return services.getRecentEntities(type)
+    return services.getRecentEntities(await getStudioActor(), type)
 }
 
 export async function getMyPendingApprovals(): Promise<SimplifiedContentEntity[]> {

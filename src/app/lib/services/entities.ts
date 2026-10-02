@@ -40,7 +40,8 @@ function createAutomaticSlug(title: string): string {
         .join('-')
 }
 
-export async function getRecentEntities(type: EntityType): Promise<SimplifiedContentEntity[]> {
+export async function getRecentEntities(actor: OperationActor, type: EntityType): Promise<SimplifiedContentEntity[]> {
+    await requireActorUser(actor, Role.writer)
     return prisma.contentEntity.findMany({
         where: { linkOnly: false, type, NOT: { slug: WEBSITE_METADATA_SLUG } },
         orderBy: { updatedAt: 'desc' },
@@ -133,7 +134,9 @@ export async function getAllPublishedCourses(): Promise<SimplifiedContentEntity[
     return prisma.contentEntity.findMany({
         where: {
             linkOnly: false,
-            type: EntityType.course
+            type: EntityType.course,
+            NOT: { slug: WEBSITE_METADATA_SLUG },
+            contentPublishedEN: { not: null }
         },
         select: SIMPLIFIED_CONTENT_ENTITY_SELECT
     })
