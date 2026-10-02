@@ -103,7 +103,7 @@ server {
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    client_max_body_size 20M;
+    client_max_body_size 250M;  # Must cover the 250 MB video upload limit
     
     location ^~ /uploads/ {
         alias /home/web/helium-baid/uploads/;  # By setting up Nginx to serve files from /uploads/, we must set `UPLOAD_SERVE_PATH` to `/uploads` (users access uploaded files on `https://.../uploads/...`) and `UPLOAD_PATH` to `uploads` (uploaded files are saved to `/var/www/helium/uploads/`).
