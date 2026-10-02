@@ -5,16 +5,14 @@ import { SignJWT } from 'jose'
 import { cookies } from 'next/headers'
 import { prisma } from '@/app/lib/prisma'
 import { ensureWebsiteMetadataEntity } from '@/app/lib/metadata/website-metadata.server'
+import { safeRedirectPath } from '@/app/login/safe-redirect'
 
 const secret = createSecretKey(process.env.JWT_SECRET!, 'utf-8')
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
     const search = request.nextUrl.searchParams
     const ip = request.headers.get('X-Forwarded-For') ?? request.headers.get('X-Real-IP') ?? 'localhost'
-    let redirectTarget = '/'
-    if (search.has('state')) {
-        redirectTarget = search.get('state')!
-    }
+    const redirectTarget = safeRedirectPath(search.get('state'))
     if (search.has('error')) {
         if (search.get('error') === 'access_denied') {
             return NextResponse.redirect(`${process.env.HOST}/`)
