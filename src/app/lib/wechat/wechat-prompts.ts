@@ -3,7 +3,7 @@ export const TRANSLATE_LITERAL = `
 
 ## 翻译要求
 - **英文为唯一语言**: 输出中**不能出现任何中文**（含括号内注释、术语原文等）。  
-- **标题与正文**: 将给定的中文标题翻译为英文并放入 \`title\`；**不要**把主标题写入 \`content\`。如果标题过长，可以适度缩写，但必须保留原意。正文禁止添加或删除。
+- **标题与正文**: 将给定的中文标题翻译为英文并放入 \`title\`；**不要**把主标题写入 \`content\`。如果标题包含中文表达，可以完全重写，或根据正文起更贴切的标题。正文禁止添加或删除。
 - **Markdown 结构**: 保留正文中的 Markdown 结构（段落、列表、加粗、斜体、引用、代码块、链接、图片等）。  
 - **图片与特殊符号**:   
   - 不要修改或翻译图片的 Markdown 语法与链接（如 \`![]()\`）。  
@@ -39,6 +39,7 @@ export const TRANSLATE_LITERAL = `
 - 不要用 "junior high school" 翻译初中；用 "middle school"。不要用 "senior high school" 翻译高中；用 "high school"。不要用 "elementary school" 翻译小学；用 "primary school"。
 - 绝对不要有任何 Chinglish；你不应该直接翻译每句话，而是要用符合英文表达习惯的方式重写文章，但必须保留原意和关键细节。
 - 张老师，不要翻译为 "Teacher Zhang"，而应用 "Mr./Ms. Zhang"。
+- 禁止说 "Beijing Academy International Division (BAID)"；直接说 "BAID"。
 
 专有名词:
 北京中学 Beijing Academy
@@ -58,7 +59,7 @@ BA 大讲堂: BA Lectures
 北中小讲师: BAID Speaker
 世界大课堂: BA Global Classroom
 阅历课程: Experiential Program
-中华文化寻根之旅: Chinese Traditional Culture Exploration
+中华文化寻根之旅: Chinese Traditional Culture Exploration (= 阅历课程)
 北京文化探究: Beijing Culture Exploration
 职业体验: Career Experiences
 英才学者: Talent Scholar
@@ -198,6 +199,7 @@ MFP (指项目): Major Foundation Program
 基础课程: Foundation Courses (在这个语境下，包含 语文: Chinese Language Arts & Culture；核心英语: Core English；核心数学: Core Mathematics；核心科学: Core Sciences；核心人文: Core Humanities)
 拓展课程: Enrichment Courses (在这个语境下，包含 学院系列: Academic Series；阅历系列: Experiential Series；雅趣系列: Fine Arts Series；健身系列: Fitness Series；服务系列: Service Series)
 潜能课程: Talent Courses (在这个语境下，包含 领导力系列: Leadership Series；创造力系列: Innovation Series；优势力系列: Arts Series)
+过境免签: transit without visa
 `
 
 export const SANITIZE_LITERAL = `
