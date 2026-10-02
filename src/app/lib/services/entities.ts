@@ -48,7 +48,7 @@ export async function getRecentEntities(type: EntityType): Promise<SimplifiedCon
 }
 
 export async function getMyPendingApprovals(actor: OperationActor): Promise<SimplifiedContentEntity[]> {
-    const user = await requireActorUser(actor)
+    const user = await requireActorUser(actor, Role.writer)
     const entityTypes = Object.values(EntityType) as EntityType[]
     const thresholdsByType = new Map<EntityType, Record<string, number>>()
     for (const t of entityTypes) {
@@ -303,7 +303,7 @@ export async function getPublishedContentEntities(page: number, type: EntityType
 }
 
 export async function getContentEntities(actor: OperationActor, page: number, type: EntityType, query: string | undefined = undefined): Promise<Paginated<SimplifiedContentEntity>> {
-    await requireActorUser(actor)
+    await requireActorUser(actor, Role.writer)
     if (query != null) {
         const q = query.trim()
         const maybeId = Number(q)
@@ -386,7 +386,7 @@ export async function getContentEntities(actor: OperationActor, page: number, ty
 }
 
 export async function getContentEntity(actor: OperationActor, id: number): Promise<HydratedContentEntity | null> {
-    await requireActorUser(actor)
+    await requireActorUser(actor, Role.writer)
     return prisma.contentEntity.findUnique({
         where: { id },
         select: HYDRATED_CONTENT_ENTITY_SELECT
