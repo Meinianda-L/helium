@@ -135,11 +135,6 @@ export default function StudioShell({ children, myUser }: { children: ReactNode;
                                         </SidebarItem>
                                     </Link>
                                 </SidebarCollapse>
-                                <Link href="/studio/settings">
-                                    <SidebarItem as="div" icon={HiCog}>
-                                        个人设置
-                                    </SidebarItem>
-                                </Link>
                                 <If condition={myUser?.roles.includes(Role.admin)}>
                                     <Link href="/studio/users">
                                         <SidebarItem as="div" icon={HiUsers}>
@@ -152,6 +147,11 @@ export default function StudioShell({ children, myUser }: { children: ReactNode;
                                         </SidebarItem>
                                     </Link>
                                 </If>
+                                <Link href="/studio/settings">
+                                    <SidebarItem as="div" icon={HiCog}>
+                                        设置
+                                    </SidebarItem>
+                                </Link>
                             </SidebarItemGroup>
                         </SidebarItems>
                         <div className="mr-3 mb-3 absolute bottom-0">

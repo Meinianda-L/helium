@@ -70,7 +70,7 @@ export default function FeishuSettings({ isLinked, result, embedded = false }: {
                     <div>
                         <p className="text-xl mb-3">未授权</p>
                         {authUrl ? (
-                            <Button as="a" className="inline-flex" href={authUrl} pill color="blue">
+                            <Button as="a" className="inline-flex cursor-pointer" href={authUrl} pill color="blue">
                                 <HiLink className="mr-2"/>
                                 授权飞书账号
                             </Button>
