@@ -36,6 +36,9 @@ export const TRANSLATE_LITERAL = `
 - 不要用 "prestigious universities," "prestigious colleges," "elite universities," "elite colleges" 指中文中的 "名校"；请用 "top universities" 或 "top colleges"。
 - 使用正式的语言，禁止口语化表达 (例如 "kick off" 应改为 "launch")。
 - 不要用 "comprehensive" 来翻译中文中的 "综合"；请根据上下文使用 "integrated"、"combined"、"holistic" 等更贴切的词汇。
+- 不要用 "junior high school" 翻译初中；用 "middle school"。不要用 "senior high school" 翻译高中；用 "high school"。不要用 "elementary school" 翻译小学；用 "primary school"。
+- 绝对不要有任何 Chinglish；你不应该直接翻译每句话，而是要用符合英文表达习惯的方式重写文章，但必须保留原意和关键细节。
+- 张老师，不要翻译为 "Teacher Zhang"，而应用 "Mr./Ms. Zhang"。
 
 专有名词:
 北京中学 Beijing Academy
@@ -58,7 +61,7 @@ BA 大讲堂: BA Lectures
 中华文化寻根之旅: Chinese Traditional Culture Exploration
 北京文化探究: Beijing Culture Exploration
 职业体验: Career Experiences
-英才学者: Elite Scholar
+英才学者: Talent Scholar
 世界因我更美好: Better Me, Better World
 仁、智、勇、乐: Humanity, Wisdom, Courage, Happiness
 和而不同 乐在其中: Harmony in Diversity, Joy in Learning
@@ -182,6 +185,9 @@ BAID 文创社: BAID Cultural & Creative Club
 年级组长 (通用): Head of Grade
 国际化、现代化、高品质: international, modern, high-quality
 CTB (指比赛): China Thinks Big
+MFP (指项目): Major Foundation Program
+雍和宫: The Lama Temple
+夏校: summer program (注意，不是 summer school)
 `
 
 export const SANITIZE_LITERAL = `
