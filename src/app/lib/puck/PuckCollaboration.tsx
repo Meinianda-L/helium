@@ -1,5 +1,7 @@
 'use client'
 
+import { createClientId } from '@/app/lib/client-id'
+
 import { replaceStudioDocument } from '@/app/studio/editor/collaboration-actions'
 import { useCollaborationRoom } from '@/app/lib/collaboration/use-room'
 import { persistCollaborationDocument } from '@/app/lib/collaboration/persist'
@@ -353,7 +355,7 @@ export function usePuckCollaboration({
         const document = docRef.current
         if (document == null) return
         document.transact(() => {
-            document.getMap('commentSignals').set('revision', `${userId}:${crypto.randomUUID()}`)
+            document.getMap('commentSignals').set('revision', `${userId}:${createClientId()}`)
         }, commentOrigin.current)
     }, [ userId ])
     const clearCursor = useCallback(() => providerRef.current?.setAwarenessField('cursor', null), [])

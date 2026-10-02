@@ -149,7 +149,13 @@ console.log('Passed: fenced room cleanup and queued saves skip storage while oth
 
 const clientSource = (await readFile(new URL('../src/app/lib/collaboration/persist.ts', import.meta.url), 'utf8'))
     .replace(/^import.*$/gm, '').replaceAll('export function', 'function')
-const persist = new Function('crypto', `${stripTypeScriptTypes(clientSource)}; return persistCollaborationDocument`)(globalThis.crypto)
+const clientIdSource = (await readFile(new URL('../src/app/lib/client-id.ts', import.meta.url), 'utf8'))
+    .replaceAll('export function', 'function')
+// HTTP browser origins expose getRandomValues while randomUUID may be unavailable.
+const httpCrypto = { getRandomValues: globalThis.crypto.getRandomValues.bind(globalThis.crypto) }
+const createClientId = new Function('globalThis', `${stripTypeScriptTypes(clientIdSource)}; return createClientId`)({ crypto: httpCrypto })
+assert.match(createClientId(), /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/)
+const persist = new Function('createClientId', `${stripTypeScriptTypes(clientSource)}; return persistCollaborationDocument`)(createClientId)
 
 class Provider extends EventEmitter {
     isSynced = true

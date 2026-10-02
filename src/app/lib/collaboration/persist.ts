@@ -1,11 +1,13 @@
 'use client'
 
+import { createClientId } from '@/app/lib/client-id'
+
 import type { HocuspocusProvider } from '@hocuspocus/provider'
 
 /** WebSocket delivery precedes this request; only a committed save receives an acknowledgement. */
 export function persistCollaborationDocument(provider: HocuspocusProvider): Promise<void> {
     return new Promise((resolve, reject) => {
-        const requestId = crypto.randomUUID()
+        const requestId = createClientId()
         const finish = (error?: Error) => {
             clearTimeout(timer)
             provider.off('stateless', onStateless)
