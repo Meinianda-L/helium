@@ -41,7 +41,7 @@ function Highlights({ highlights, uploadPrefix }: { highlights: Highlight[] | nu
                     {highlight.title}
                 </p>
                 <p>{highlight.text}</p>
-                <If condition={highlight.link != null && highlight.linkText != null}>
+                <If condition={Boolean(highlight.link?.trim() && highlight.linkText?.trim())}>
                     <div className="mt-2">
                         <ReadMore text={highlight.linkText ?? ''}
                                   to={highlight.link == null ? '' : highlight.link}/>

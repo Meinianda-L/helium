@@ -92,13 +92,16 @@
 
 .page-editor [class*="_PuckCanvas_"]:not([class*="_PuckCanvas-"]) {
     background: #f6f7f9;
+    min-height: 0;
+    min-width: 0;
 }
 
 .page-editor [class*="_PuckCanvas-root_"] {
     border-color: #dfe3e8;
     border-radius: 0.75rem;
     box-shadow: none;
-    overflow: hidden;
+    /* Keep long previews reachable when the canvas height or zoom changes. */
+    overflow: auto;
 }
 
 .page-editor [class*="_Sidebar--"] {
