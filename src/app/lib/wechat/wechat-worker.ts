@@ -17,6 +17,7 @@ import {
 import { packageUp } from 'package-up'
 import { deserializeMarkdownToPlate } from '@/app/lib/plate/plate-markdown'
 import { serializePlateValue } from '@/app/lib/plate/plate-types'
+import { parseWeChatCategory } from '@/app/lib/wechat/wechat-categories'
 
 const MAX_IMAGE_DIMENSION = 2000
 
@@ -57,7 +58,7 @@ async function download(command: string, args: string[], cwd: string, signal: Ab
 function parseResponse(raw: string) {
     const value = parseAilyJson(raw)
     if (typeof value.title !== 'string' || typeof value.content !== 'string') throw new Error('AI 返回的标题或正文格式错误')
-    return value as { title: string; content: string; date?: string }
+    return value as { title: string; content: string; date?: string; category?: unknown }
 }
 
 function spaceChineseAlphanumericBoundaries(content: string): string {
@@ -131,6 +132,7 @@ export async function synchronizeWeChatArticle(task: RunningWeChatTask, link: st
             markdownContent,
             signal
         ))
+        const category = parseWeChatCategory(sanitized.category)
         const titleChinese = spaceChineseAlphanumericBoundaries(sanitized.title)
         const contentChinese = spaceChineseAlphanumericBoundaries(sanitized.content)
         task.title = titleChinese
@@ -201,6 +203,7 @@ export async function synchronizeWeChatArticle(task: RunningWeChatTask, link: st
                     signal.throwIfAborted()
                     const post = await tx.contentEntity.create({ data: {
                         type: EntityType.post, titleDraftEN: translated.title, titleDraftZH: titleChinese,
+                        categoryEN: category.categoryEN, categoryZH: category.categoryZH,
                             slug, contentDraftEN: plateContentEN, contentDraftZH: plateContentZH,
                         coverImageDraftId: coverImageId, createdAt: date, creatorId: user.id
                     } })
