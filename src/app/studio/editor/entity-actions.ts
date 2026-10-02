@@ -20,10 +20,6 @@ export async function getAllPublishedCourses(): Promise<SimplifiedContentEntity[
     return services.getAllPublishedCourses()
 }
 
-export async function refreshPageData(): Promise<void> {
-    return services.refreshPageData()
-}
-
 export async function getContentEntityBySlug(slug: string): Promise<PublicContentEntity | null> {
     return services.getContentEntityBySlug(slug)
 }
