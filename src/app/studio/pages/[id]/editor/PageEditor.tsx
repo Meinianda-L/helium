@@ -15,6 +15,7 @@ import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { Puck, type Data } from '@puckeditor/core'
 import { PUCK_CONFIG } from '@/app/lib/puck/puck-config'
 import StableInlineText from '@/app/lib/puck/StableInlineText'
+import PuckPreviewFrame from '@/app/lib/puck/PuckPreviewFrame'
 import {
     PuckCommentActionBarOverride,
     PuckCommentHighlights,
@@ -254,6 +255,7 @@ export default function PageEditor({ init, user, host, initialCommentThreads }: 
                     </span>
                 </>
             },
+            iframe: PuckPreviewFrame,
             preview: ({ children }: { children: ReactNode }) => {
                 const state = puckOverrideStateRef.current!
                 return <PuckCollaborativePreview cursors={state.collaboration.remoteCursors}

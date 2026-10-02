@@ -104,6 +104,24 @@
     overflow: auto;
 }
 
+/* Anchor the preview height to Puck's measured canvas, including in Safari. */
+.page-editor #puck-canvas-root > div {
+    position: absolute;
+    inset: 0;
+    height: auto;
+}
+
+.page-editor [data-puck-preview] {
+    position: absolute;
+    inset: 0;
+    height: auto;
+}
+
+.page-editor iframe#preview-frame {
+    display: block;
+    height: 100%;
+}
+
 .page-editor [class*="_Sidebar--"] {
     background: #ffffff;
     border-color: #e5e7eb;
