@@ -155,16 +155,20 @@ export async function refreshPageData(): Promise<void> {
         }
     })
     for (const page of pages) {
-        await prisma.contentEntity.update({
-            where: { id: page.id },
-            data: {
-                contentDraftEN: JSON.stringify(await resolveAllData(parsePuckData(page.contentDraftEN, page.titleDraftEN), PUCK_CONFIG)),
-                contentDraftZH: JSON.stringify(await resolveAllData(parsePuckData(page.contentDraftZH, page.titleDraftZH), PUCK_CONFIG)),
-                contentPublishedEN: page.contentPublishedEN == null ? null : JSON.stringify(await resolveAllData(
-                    parsePuckData(page.contentPublishedEN, page.titlePublishedEN ?? ''), PUCK_CONFIG)),
-                contentPublishedZH: page.contentPublishedZH == null ? null : JSON.stringify(await resolveAllData(
-                    parsePuckData(page.contentPublishedZH, page.titlePublishedZH ?? ''), PUCK_CONFIG))
-            }
+        const data = {
+            contentDraftEN: JSON.stringify(await resolveAllData(parsePuckData(page.contentDraftEN, page.titleDraftEN), PUCK_CONFIG)),
+            contentDraftZH: JSON.stringify(await resolveAllData(parsePuckData(page.contentDraftZH, page.titleDraftZH), PUCK_CONFIG)),
+            contentPublishedEN: page.contentPublishedEN == null ? null : JSON.stringify(await resolveAllData(
+                parsePuckData(page.contentPublishedEN, page.titlePublishedEN ?? ''), PUCK_CONFIG)),
+            contentPublishedZH: page.contentPublishedZH == null ? null : JSON.stringify(await resolveAllData(
+                parsePuckData(page.contentPublishedZH, page.titlePublishedZH ?? ''), PUCK_CONFIG))
+        }
+        if (Object.entries(data).every(([ field, value ]) => page[field as keyof typeof data] === value)) continue
+        // A background refresh is not an edit: keep updatedAt (and thus the entity revision) unless
+        // resolved data actually changed, and skip pages saved by an editor since they were read.
+        await prisma.contentEntity.updateMany({
+            where: { id: page.id, updatedAt: page.updatedAt },
+            data: { ...data, updatedAt: page.updatedAt }
         })
     }
     lastRefresh = Date.now()
