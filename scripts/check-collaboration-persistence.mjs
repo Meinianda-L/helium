@@ -136,6 +136,17 @@ await persistDocument('puck-page:4:zh:g1', puck, 7)
 assert.equal(events.at(-1).sql, 'COMMIT')
 console.log('Passed: earlier generations fail before persisted snapshots can overwrite replacement')
 
+events.length = 0
+const retiredSave = persistDocument('puck-page:4:zh:g0', puck, 7)
+puck.mcpFenced = true
+await retiredSave
+await persistDocument('puck-page:4:zh:g0', puck, 7)
+assert.equal(events.length, 0)
+assert.equal(active, 0)
+puck.mcpFenced = false
+await assert.rejects(persistDocument('puck-page:4:zh:g0', puck, 7), /Stale collaboration generation/)
+console.log('Passed: fenced room cleanup and queued saves skip storage while other stale writes remain rejected')
+
 const clientSource = (await readFile(new URL('../src/app/lib/collaboration/persist.ts', import.meta.url), 'utf8'))
     .replace(/^import.*$/gm, '').replaceAll('export function', 'function')
 const persist = new Function('crypto', `${stripTypeScriptTypes(clientSource)}; return persistCollaborationDocument`)(globalThis.crypto)

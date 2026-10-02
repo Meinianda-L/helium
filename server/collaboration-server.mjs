@@ -123,6 +123,9 @@ function persistDocument(documentName, document, userId) {
     const previous = persistenceQueues.get(documentName) ?? Promise.resolve()
     const operation = previous.catch(() => {
     }).then(async () => {
+        // Replacement commits the next generation before disconnecting the old room.
+        // Cleanup and queued saves must leave that retired document untouched.
+        if (document.mcpFenced) return
         const { entityId, kind, language, generation } = parseRoom(documentName)
         const contentColumn = language === 'en' ? 'contentDraftEN' : 'contentDraftZH'
         const titleColumn = language === 'en' ? 'titleDraftEN' : 'titleDraftZH'
@@ -143,6 +146,11 @@ function persistDocument(documentName, document, userId) {
                 "${titleColumn}" AS title FROM "ContentEntity" WHERE "id" = $1 FOR UPDATE`, [ entityId ])
             if (entity.rowCount !== 1 || (entity.rows[0].type === 'page') !== (kind === 'puck')) {
                 throw new Error('Collaboration document type mismatch')
+            }
+            // A save waiting on the row lock may have started before replacement committed.
+            if (document.mcpFenced) {
+                await client.query('ROLLBACK')
+                return
             }
             if (Number(entity.rows[0].collaborationGeneration ?? 0) !== generation) throw new Error('Stale collaboration generation')
             await client.query(`INSERT INTO "YjsDocument"
