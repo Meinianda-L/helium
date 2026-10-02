@@ -261,7 +261,8 @@ export async function getAllPublishedContentEntities(): Promise<SimplifiedConten
     })
 }
 
-export async function getPublishedContentEntities(page: number, type: EntityType, query: string | undefined = undefined, category: string | undefined = undefined): Promise<Paginated<SimplifiedContentEntity>> {
+export async function getPublishedContentEntities(page: number, type: EntityType, query: string | undefined = undefined, category: string | undefined = undefined, pageSize = PAGE_SIZE): Promise<Paginated<SimplifiedContentEntity>> {
+    const effectivePageSize = Math.min(100, Math.max(1, Math.floor(pageSize)))
     const pages = Math.ceil(await prisma.contentEntity.count({
         where: {
             linkOnly: false,
@@ -275,7 +276,7 @@ export async function getPublishedContentEntities(page: number, type: EntityType
                 { slug: { contains: query, mode: 'insensitive' } }
             ]
         }
-    }) / PAGE_SIZE)
+    }) / effectivePageSize)
     const posts = await prisma.contentEntity.findMany({
         where: {
             linkOnly: false,
@@ -291,7 +292,7 @@ export async function getPublishedContentEntities(page: number, type: EntityType
         },
         orderBy: { createdAt: 'desc' },
         skip: page * PAGE_SIZE,
-        take: PAGE_SIZE,
+        take: effectivePageSize,
         select: SIMPLIFIED_CONTENT_ENTITY_SELECT
     })
     return {

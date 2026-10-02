@@ -48,8 +48,8 @@ export async function getAllPublishedContentEntities(): Promise<SimplifiedConten
     return services.getAllPublishedContentEntities()
 }
 
-export async function getPublishedContentEntities(page: number, type: EntityType, query: string | undefined = undefined, category: string | undefined = undefined): Promise<Paginated<SimplifiedContentEntity>> {
-    return services.getPublishedContentEntities(page, type, query, category)
+export async function getPublishedContentEntities(page: number, type: EntityType, query: string | undefined = undefined, category: string | undefined = undefined, pageSize?: number): Promise<Paginated<SimplifiedContentEntity>> {
+    return services.getPublishedContentEntities(page, type, query, category, pageSize)
 }
 
 export async function getContentEntities(page: number, type: EntityType, query: string | undefined = undefined): Promise<Paginated<SimplifiedContentEntity>> {

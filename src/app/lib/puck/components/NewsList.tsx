@@ -8,10 +8,11 @@ import { useLanguage } from '@/app/[[...slug]]/useLanguage'
 import { EntityType } from '@/generated/prisma/browser'
 import Card from '@/app/lib/puck/components/Card'
 
-export default function NewsList({ init, uploadPrefix, category: rawCategory }: {
+export default function NewsList({ init, uploadPrefix, category: rawCategory, itemsPerPage }: {
     init: Paginated<SimplifiedContentEntity>,
     uploadPrefix: string,
-    category?: string | null
+    category?: string | null,
+    itemsPerPage?: number
 }) {
     const language = useLanguage()
     const [ page, setPage ] = useState<Paginated<SimplifiedContentEntity>>(init)
@@ -29,9 +30,9 @@ export default function NewsList({ init, uploadPrefix, category: rawCategory }: 
         }
 
         (async () => {
-            setPage(await getPublishedContentEntities(currentPage, EntityType.post, undefined, category))
+            setPage(await getPublishedContentEntities(currentPage, EntityType.post, undefined, category, itemsPerPage))
         })()
-    }, [ category, currentPage ])
+    }, [ category, currentPage, itemsPerPage ])
 
     return <section className="section container my-16 md:my-24">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-3">
