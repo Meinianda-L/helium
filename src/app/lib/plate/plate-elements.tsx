@@ -8,6 +8,7 @@ import {
     type PlateLeafProps,
     useEditorReadOnly,
     useEditorRef,
+    useFocused,
     usePath,
     useSelected
 } from 'platejs/react'
@@ -88,7 +89,7 @@ function useBlockSuggestion(element: PlateElementProps['element']) {
 export const ParagraphElement = (props: PlateElementProps) => {
     const suggestion = useBlockSuggestion(props.element)
     return <PlateElement {...props} as="p" attributes={{ ...props.attributes, ...suggestion.attributes }}
-                         className={`mb-4 w-full leading-7 last:mb-0 ${suggestion.className}`}/>
+                         className={`m-0 w-full pb-4 leading-7 last:pb-0 ${suggestion.className}`}/>
 }
 
 export const BlockquoteElement = (props: PlateElementProps) => {
@@ -191,7 +192,7 @@ function TableCell({ as, ...props }: PlateElementProps<TTableCellElement> & { as
                              rowSpan: getRowSpan(props.element),
                              ...(as === 'th' ? { scope: 'col' as const } : {})
                          }}
-                         className={`min-w-28 px-3 py-2 align-top [&>p]:mb-0 ${
+                         className={`min-w-28 px-3 py-2 align-top [&>p]:pb-0 ${
                              as === 'th' ? 'bg-gray-50 font-semibold' : 'bg-white'
                          } ${selected ? '!bg-blue-50' : ''}`}/>
 }
@@ -211,6 +212,7 @@ export const ImageElement = ({ children, ...props }: PlateElementProps<TImageEle
     const editor = useEditorRef()
     usePath()
     const selected = useSelected()
+    const focused = useFocused()
     const readOnly = useEditorReadOnly()
     const imageId = props.element.imageId
     const image = imageId == null ? null : images.get(imageId)
@@ -247,35 +249,45 @@ export const ImageElement = ({ children, ...props }: PlateElementProps<TImageEle
                              grouped
                                  ? 'my-2 block w-full sm:w-1/2 sm:px-2'
                                  : 'mx-auto my-5 block w-fit max-w-full overflow-hidden'
-                         } ${selected ? 'border-blue-500' : 'border-transparent'}`}>
-        {selected && !readOnly && <div contentEditable={false} className="absolute right-2 top-2 z-10">
-            <Button pill size="xs" color="red"
-                    onMouseDown={event => {
-                        event.preventDefault()
-                        event.stopPropagation()
-                    }}
-                    onClick={event => {
-                        event.preventDefault()
-                        event.stopPropagation()
-                        const currentPath = editor.api.findPath(props.element)
-                        if (currentPath != null) editor.tf.removeNodes({ at: currentPath })
-                    }}>
-                <HiTrash className="mr-1 size-4" aria-hidden="true"/>
-                删除图片
-            </Button>
-        </div>}
-        {src
-            ? <img contentEditable={false} src={src} alt={alt}
-                   style={imageStyle}
-                   className={`!m-0 mx-auto ${
-                       grouped
-                           ? 'w-full max-h-[28rem] !object-cover'
-                           : 'block h-auto max-h-[36rem] max-w-full object-contain'
-                   }`}/>
-            : <div contentEditable={false}
-                   className="flex min-h-32 items-center justify-center rounded-3xl bg-gray-100 text-sm text-gray-500">
-                图片加载中
+                         } ${selected && focused ? 'border-blue-500' : 'border-transparent'}`}>
+        <div contentEditable={false}
+             onMouseDown={event => {
+                 if (readOnly || event.button !== 0 || event.shiftKey) return
+                 // Focus while selecting the void so subsequent text clicks start in the focused editor.
+                 const path = editor.api.findPath(props.element)
+                 if (path == null) return
+                 event.preventDefault()
+                 editor.tf.focus({ at: path })
+             }}>
+            {selected && focused && !readOnly && <div contentEditable={false} className="absolute right-2 top-2 z-10">
+                <Button pill size="xs" color="red"
+                        onMouseDown={event => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }}
+                        onClick={event => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            const currentPath = editor.api.findPath(props.element)
+                            if (currentPath != null) editor.tf.removeNodes({ at: currentPath })
+                        }}>
+                    <HiTrash className="mr-1 size-4" aria-hidden="true"/>
+                    删除图片
+                </Button>
             </div>}
+            {src
+                ? <img draggable={false} src={src} alt={alt}
+                       style={imageStyle}
+                       className={`!m-0 mx-auto ${
+                           grouped
+                               ? 'w-full max-h-[28rem] !object-cover'
+                               : 'block h-auto max-h-[36rem] max-w-full object-contain'
+                       }`}/>
+                : <div contentEditable={false}
+                       className="flex min-h-32 items-center justify-center rounded-3xl bg-gray-100 text-sm text-gray-500">
+                    图片加载中
+                </div>}
+        </div>
         {children}
     </PlateElement>
 }

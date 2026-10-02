@@ -188,6 +188,16 @@ CTB (指比赛): China Thinks Big
 MFP (指项目): Major Foundation Program
 雍和宫: The Lama Temple
 夏校: summer program (注意，不是 summer school)
+一体两翼 (指办学理念): One Core, Two Twings
+让人成为人: To nurture humanity
+让自己成为自己: To help every individual become their true self
+让世界因我更美好: To make the world a better place because of me
+爱国情怀: Patriotism
+健康人格: Healthy Character
+创新精神: Innovative Spirit
+基础课程: Foundation Courses (在这个语境下，包含 语文: Chinese Language Arts & Culture；核心英语: Core English；核心数学: Core Mathematics；核心科学: Core Sciences；核心人文: Core Humanities)
+拓展课程: Enrichment Courses (在这个语境下，包含 学院系列: Academic Series；阅历系列: Experiential Series；雅趣系列: Fine Arts Series；健身系列: Fitness Series；服务系列: Service Series)
+潜能课程: Talent Courses (在这个语境下，包含 领导力系列: Leadership Series；创造力系列: Innovation Series；优势力系列: Arts Series)
 `
 
 export const SANITIZE_LITERAL = `
