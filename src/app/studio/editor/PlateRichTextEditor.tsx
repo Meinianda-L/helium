@@ -701,7 +701,8 @@ export default function PlateRichTextEditor({
                                     style={readOnly ? undefined : { boxShadow: 'none', outline: 'none' }}
                                     className={readOnly
                                         ? 'flex min-h-0 flex-wrap content-start px-0 py-0 outline-none'
-                                        : 'flex min-h-0 flex-1 flex-wrap content-start overflow-y-auto px-5 py-4 text-gray-900 outline-none focus-visible:outline-none'}
+                                        // Extend paragraph boxes into the side gutters while preserving the text inset.
+                                        : 'flex min-h-0 flex-1 flex-wrap content-start overflow-y-auto px-5 py-4 text-gray-900 outline-none focus-visible:outline-none [&>p]:-mx-5 [&>p]:w-[calc(100%+2.5rem)] [&>p]:shrink-0 [&>p]:px-5'}
                                 />
                                 {collaborationEnabled && <RemoteCursorOverlay editor={editor}
                                                                               container={editorContainerRef}
