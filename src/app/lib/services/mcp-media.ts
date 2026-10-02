@@ -36,7 +36,7 @@ export async function readMcpImage(actor: OperationActor, imageId: number) {
     const image = await prisma.image.findUnique({ where: { id: imageId } })
     if (!image || image.mediaType !== 'image') throw new Error('Image does not exist')
     if (!/^[a-f0-9]{40}$/.test(image.sha1) || !/^(webp|png|jpg|jpeg|gif)$/.test(image.extension)) throw new Error('Invalid stored image format')
-    const file = path.join(process.env.UPLOAD_PATH!, `${image.sha1}.${image.extension}`)
+    const file = path.join(/* turbopackIgnore: true */ process.env.UPLOAD_PATH!, `${image.sha1}.${image.extension}`)
     const data = await sharp(file, { limitInputPixels: 40_000_000 }).resize(1600, 1600, {
         fit: 'inside',
         withoutEnlargement: true
@@ -63,7 +63,7 @@ export async function uploadMcpImage(actor: OperationActor, raw: unknown) {
         const uploaded = await uploadMedia(actor, new File([ new Uint8Array(buffer) ], input.name, { type: input.mimeType }))
         const existing = await tx.image.findUnique({ where: { sha1: uploaded.hash } })
         if (existing) return { ok: true, data: existing, reused: true }
-        const metadata = await sharp(path.join(process.env.UPLOAD_PATH!, `${uploaded.hash}.webp`)).metadata()
+        const metadata = await sharp(path.join(/* turbopackIgnore: true */ process.env.UPLOAD_PATH!, `${uploaded.hash}.webp`)).metadata()
         const image = await tx.image.create({
             data: {
                 name: input.name,
@@ -137,8 +137,8 @@ export async function deleteMcpImage(actor: OperationActor, raw: unknown) {
     })
     if (result.ok === true) {
         const data = result.data as { hash: string; extension: string }
-        if (!await prisma.image.findUnique({ where: { sha1: data.hash } })) await Promise.allSettled([ fs.rm(path.join(process.env.UPLOAD_PATH!, `${data.hash}.${data.extension}`), { force: true }),
-            fs.rm(path.join(process.env.UPLOAD_PATH!, `${data.hash}_thumb.webp`), { force: true }) ])
+        if (!await prisma.image.findUnique({ where: { sha1: data.hash } })) await Promise.allSettled([ fs.rm(path.join(/* turbopackIgnore: true */ process.env.UPLOAD_PATH!, `${data.hash}.${data.extension}`), { force: true }),
+            fs.rm(path.join(/* turbopackIgnore: true */ process.env.UPLOAD_PATH!, `${data.hash}_thumb.webp`), { force: true }) ])
     }
     return result
 }
