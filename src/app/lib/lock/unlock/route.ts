@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { releaseLock } from '@/app/lib/lock/lock-actions'
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-    const data = await req.json()
+    let data
+    try {
+        data = await req.json()
+    } catch {
+        return NextResponse.json({ error: 'invalid-request' }, { status: 400 })
+    }
     try {
         await releaseLock({
             entityType: data.entityType,
