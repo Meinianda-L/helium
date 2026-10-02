@@ -57,6 +57,7 @@ export async function coordinateEditorRequest({ pool, instance, persistDocument,
     const currentGeneration = Number(entity.rows[0].collaborationGeneration ?? 0)
     const documentName = `${input.editor === 'puck' ? 'puck-page' : 'content-entity'}:${input.entityId}:${input.language}:g${currentGeneration}`
     const connection = await instance.openDirectConnection(documentName, { userId: actor.userId, source: 'mcp' })
+    let mutationCommitted = false
     try {
         const document = connection.document
         const read = () => input.editor === 'plate' ? readPlateDocument(document) : readPuckYjsDocument(document)
@@ -203,11 +204,23 @@ export async function coordinateEditorRequest({ pool, instance, persistDocument,
         })
         requests.set(key, operation)
         try {
-            return await operation
+            const result = await operation
+            mutationCommitted = result.ok === true
+            return result
         } finally {
             if (requests.get(key) === operation) requests.delete(key)
         }
     } finally {
-        await connection.disconnect()
+        try {
+            await connection.disconnect()
+        } catch (error) {
+            // Content and the retry receipt are already durable. Cleanup must preserve
+            // that confirmed outcome even if Hocuspocus's additional store fails.
+            if (!mutationCommitted) throw error
+            console.error('MCP editor cleanup failed after committed mutation', {
+                action, entityId: input.entityId, language: input.language,
+                editor: input.editor, userId: actor.userId
+            }, error)
+        }
     }
 }

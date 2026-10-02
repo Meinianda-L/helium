@@ -131,6 +131,7 @@ let tokenActive = true
 let stored = null
 let writes = 0
 let failPersistence = false
+let failDisconnect = false
 const live = new Y.Doc()
 initializePuckYjsDocument(live, puck)
 const pool = {
@@ -145,6 +146,7 @@ const pool = {
 const instance = {
     openDirectConnection: async () => ({
         document: live, disconnect: async () => {
+            if (failDisconnect) throw new Error('Cleanup unavailable')
         }
     })
 }
@@ -202,6 +204,25 @@ failPersistence = false
 assert.equal((await call('edit', retry)).replayed, true)
 assert.equal(stored.idempotencyKey, 'recover')
 console.log('Passed: coordinator permissions, concurrent retries, conflicts, generation, and recovery after persistence failure')
+failDisconnect = true
+const cleanupInput = {
+    ...input, idempotencyKey: 'cleanup', commands: [ {
+        ...input.commands[0], expected: 'Recovered', value: 'Committed despite cleanup failure'
+    } ]
+}
+assert.equal((await call('edit', cleanupInput)).ok, true)
+assert.equal(stored.idempotencyKey, 'cleanup')
+assert.equal((await call('edit', cleanupInput)).replayed, true)
+failPersistence = true
+await assert.rejects(call('edit', {
+    ...cleanupInput, idempotencyKey: 'uncommitted', commands: [ {
+        ...input.commands[0], expected: 'Committed despite cleanup failure', value: 'Pending'
+    } ]
+}), /Cleanup unavailable/)
+failPersistence = false
+failDisconnect = false
+console.log('Passed: committed edits report success after cleanup failure; uncommitted edits still fail')
+
 document.destroy()
 live.destroy()
 
