@@ -394,6 +394,31 @@ export async function getContentEntities(actor: OperationActor, page: number, ty
     }
 }
 
+/**
+ * Converts legacy Markdown content to Plate JSON before the rich text editor opens it.
+ * The collaboration server cannot parse Markdown and would seed the document with the raw text as a single
+ * paragraph, which autosave then persisted. A published version identical to the draft is converted too, so the
+ * entity is not reported as having unpublished changes. This is a format migration, not an edit.
+ */
+export async function convertLegacyMarkdownContent(actor: OperationActor, id: number): Promise<void> {
+    await requireActorUser(actor, Role.writer)
+    const entity = await prisma.contentEntity.findUnique({ where: { id } })
+    if (entity == null || entity.type === EntityType.page || entity.slug === WEBSITE_METADATA_SLUG) return
+    const data: Partial<Record<'contentDraftEN' | 'contentDraftZH' | 'contentPublishedEN' | 'contentPublishedZH', string>> = {}
+    for (const language of [ 'EN', 'ZH' ] as const) {
+        const draft = entity[`contentDraft${language}`]
+        if (isSerializedPlateValue(draft)) continue
+        const converted = serializePlateValue(deserializeMarkdownToPlate(draft))
+        data[`contentDraft${language}`] = converted
+        if (entity[`contentPublished${language}`] === draft) data[`contentPublished${language}`] = converted
+    }
+    if (Object.keys(data).length === 0) return
+    await prisma.contentEntity.updateMany({
+        where: { id, updatedAt: entity.updatedAt },
+        data: { ...data, updatedAt: entity.updatedAt }
+    })
+}
+
 export async function getContentEntity(actor: OperationActor, id: number): Promise<HydratedContentEntity | null> {
     await requireActorUser(actor, Role.writer)
     return prisma.contentEntity.findUnique({
