@@ -100,9 +100,7 @@ server {
     
     root /var/www/helium;
     
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    # Security headers for app responses are set by Helium itself (next.config.ts).
     client_max_body_size 250M;  # Must cover the 250 MB video upload limit
     
     location ^~ /uploads/ {
