@@ -1,5 +1,6 @@
 'use client'
 
+import { withExpectedFields } from '@/app/lib/collaboration/expected-fields'
 import { HydratedContentEntity } from '@/app/lib/data-types'
 import {
     deleteContentEntity,
@@ -107,6 +108,9 @@ export default function PageEditor({ init, user, host, initialCommentThreads }: 
         setInEnglish(current => !current)
     }
 
+    const persistenceRef = useRef<(() => Promise<void>) | null>(null)
+    const collaborative = Boolean(process.env.NEXT_PUBLIC_HOCUSPOCUS_URL)
+
     // = Save
     const {
         draft,
@@ -118,13 +122,17 @@ export default function PageEditor({ init, user, host, initialCommentThreads }: 
     } = useSavableEntity({
         initial: init,
         saveFn: async (draft, previous) => {
-            return await updateContentEntity({
+            if (collaborative) {
+                if (!persistenceRef.current) throw new Error('Collaborative editor is still initializing')
+                await persistenceRef.current()
+            }
+            return await updateContentEntity(withExpectedFields({
                 id: draft.id,
-                titleDraftEN: draft.titleDraftEN !== previous.titleDraftEN ? draft.titleDraftEN : undefined,
-                titleDraftZH: draft.titleDraftZH !== previous.titleDraftZH ? draft.titleDraftZH : undefined,
+                titleDraftEN: !collaborative && draft.titleDraftEN !== previous.titleDraftEN ? draft.titleDraftEN : undefined,
+                titleDraftZH: !collaborative && draft.titleDraftZH !== previous.titleDraftZH ? draft.titleDraftZH : undefined,
                 slug: draft.slug !== previous.slug ? draft.slug : undefined,
-                contentDraftEN: draft.contentDraftEN !== previous.contentDraftEN ? draft.contentDraftEN : undefined,
-                contentDraftZH: draft.contentDraftZH !== previous.contentDraftZH ? draft.contentDraftZH : undefined,
+                contentDraftEN: !collaborative && draft.contentDraftEN !== previous.contentDraftEN ? draft.contentDraftEN : undefined,
+                contentDraftZH: !collaborative && draft.contentDraftZH !== previous.contentDraftZH ? draft.contentDraftZH : undefined,
                 shortContentDraftEN: undefined,
                 shortContentDraftZH: undefined,
                 categoryEN: undefined,
@@ -133,7 +141,7 @@ export default function PageEditor({ init, user, host, initialCommentThreads }: 
                 transparentNavbarDraft: draft.transparentNavbarDraft !== previous.transparentNavbarDraft
                     ? draft.transparentNavbarDraft : undefined,
                 createdAt: undefined
-            })
+            }, previous))
         },
         refreshFn: async () => (await getContentEntity(init.id))!,
         compareKeys: [
@@ -218,6 +226,8 @@ export default function PageEditor({ init, user, host, initialCommentThreads }: 
         onCommentsChanged: refreshCommentThreads,
         onRemoteData: applyRemotePuckData
     })
+
+    persistenceRef.current = collaboration.persist
 
     const puckOverrideStateRef = useRef<{
         inEnglish: boolean
@@ -472,18 +482,7 @@ export default function PageEditor({ init, user, host, initialCommentThreads }: 
                                 setLoadingAdditional(true)
                                 try {
                                     const restored = await restoreContentEntityDraftFromPublished(draft.id)
-                                    await Promise.all([
-                                        replacePuckCollaborationDocument({
-                                            data: parsePuckData(restored.contentDraftEN, restored.titleDraftEN),
-                                            entityId: draft.id,
-                                            language: 'en'
-                                        }),
-                                        replacePuckCollaborationDocument({
-                                            data: parsePuckData(restored.contentDraftZH, restored.titleDraftZH),
-                                            entityId: draft.id,
-                                            language: 'zh'
-                                        })
-                                    ])
+
                                     setDraft(restored)
                                     setPuckRevision(current => current + 1)
                                     setRestoreConfirm(false)

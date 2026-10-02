@@ -1,5 +1,6 @@
 'use client'
 
+import { withExpectedFields } from '@/app/lib/collaboration/expected-fields'
 import If from '@/app/lib/If'
 import {
     Badge,
@@ -60,7 +61,6 @@ import {
     setPlateCommentThreadResolved
 } from '@/app/studio/editor/comment-actions'
 import { extractContentImageIds, hasPlateSuggestions } from '@/app/lib/plate/plate-types'
-import { replacePlateCollaborationDocument } from '@/app/lib/plate/plate-collaboration'
 import ContentEntityDisplay from '@/app/lib/ContentEntityDisplay'
 
 const AUTO_SAVE_INTERVAL_MS = 30_000
@@ -152,6 +152,15 @@ export default function ContentEntityEditor({ init, initialCommentThreads, user,
         setInEnglish(current => !current)
     }
 
+    const persistenceRef = useRef<Record<string, (() => Promise<void>) | null>>({})
+    const registerEnglishPersistence = useCallback((persist: (() => Promise<void>) | null) => {
+        persistenceRef.current.en = persist
+    }, [])
+    const registerChinesePersistence = useCallback((persist: (() => Promise<void>) | null) => {
+        persistenceRef.current.zh = persist
+    }, [])
+    const collaborative = Boolean(process.env.NEXT_PUBLIC_HOCUSPOCUS_URL)
+
     // = Save
     const {
         draft: post,
@@ -165,7 +174,15 @@ export default function ContentEntityEditor({ init, initialCommentThreads, user,
         saveFn: async (draft, previous) => {
             const saveEnglish = inEnglish || languageComparisonMode
             const saveChinese = !inEnglish || languageComparisonMode
-            return await updateContentEntity({
+            if (collaborative) {
+                const languages = languageComparisonMode ? [ 'en', 'zh' ] : [ inEnglish ? 'en' : 'zh' ]
+                for (const language of languages) {
+                    const persist = persistenceRef.current[language]
+                    if (!persist) throw new Error('Collaborative editor is still initializing')
+                    await persist()
+                }
+            }
+            return await updateContentEntity(withExpectedFields({
                 id: draft.id,
                 titleDraftEN: draft.titleDraftEN !== previous.titleDraftEN
                     ? draft.titleDraftEN : undefined,
@@ -176,9 +193,9 @@ export default function ContentEntityEditor({ init, initialCommentThreads, user,
                 categoryZH: draft.categoryZH !== previous.categoryZH
                     ? draft.categoryZH : undefined,
                 slug: draft.slug !== previous.slug ? draft.slug : undefined,
-                contentDraftEN: saveEnglish && draft.contentDraftEN !== previous.contentDraftEN
+                contentDraftEN: !collaborative && saveEnglish && draft.contentDraftEN !== previous.contentDraftEN
                     ? draft.contentDraftEN : undefined,
-                contentDraftZH: saveChinese && draft.contentDraftZH !== previous.contentDraftZH
+                contentDraftZH: !collaborative && saveChinese && draft.contentDraftZH !== previous.contentDraftZH
                     ? draft.contentDraftZH : undefined,
                 shortContentDraftEN: draft.shortContentDraftEN !== previous.shortContentDraftEN
                     ? draft.shortContentDraftEN : undefined,
@@ -188,7 +205,7 @@ export default function ContentEntityEditor({ init, initialCommentThreads, user,
                     ? draft.coverImageDraft?.id ?? null : undefined,
                 transparentNavbarDraft: undefined,
                 createdAt: String(draft.createdAt) !== String(previous.createdAt) ? draft.createdAt : undefined
-            })
+            }, previous))
         },
         refreshFn: async () => (await getContentEntity(init.id))!,
         compareKeys: [
@@ -303,6 +320,7 @@ export default function ContentEntityEditor({ init, initialCommentThreads, user,
         const content = english ? post.contentDraftEN : post.contentDraftZH
         const languageComments = commentThreads.filter(thread => thread.language === language)
         return <PlateRichTextEditor
+            onPersistenceReady={english ? registerEnglishPersistence : registerChinesePersistence}
             documentKey={`${post.id}-${english ? 'en' : 'zh'}-${contentRevision}`}
             content={content}
             collaboration={canWrite ? { entityId: post.id, language } : undefined}
@@ -769,18 +787,7 @@ export default function ContentEntityEditor({ init, initialCommentThreads, user,
                                                 setLoadingAdditional(true)
                                                 try {
                                                     const restored = await restoreContentEntityDraftFromPublished(post.id)
-                                                    await Promise.all([
-                                                        replacePlateCollaborationDocument({
-                                                            content: restored.contentDraftEN,
-                                                            entityId: post.id,
-                                                            language: 'en'
-                                                        }),
-                                                        replacePlateCollaborationDocument({
-                                                            content: restored.contentDraftZH,
-                                                            entityId: post.id,
-                                                            language: 'zh'
-                                                        })
-                                                    ])
+
                                                     setPost(restored)
                                                     setContentRevision(current => current + 1)
                                                     setRestoreConfirm(false)

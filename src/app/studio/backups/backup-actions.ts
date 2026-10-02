@@ -1,42 +1,22 @@
 'use server'
 
-import { Role } from '@/generated/prisma/client'
-import { requireUserWithRole } from '@/app/login/login-actions'
-import {
-    createContentBackup,
-    deleteBackupFile,
-    listBackups,
-    pruneOldBackups,
-    restoreContentBackup
-} from '@/app/lib/backups'
 import type { BackupFile } from '@/app/lib/backups'
-import { invalidateCollaborationDocuments } from '@/app/lib/collaboration/invalidate'
+
+import { getStudioActor } from '@/app/lib/services/studio-actor'
+import * as services from '@/app/lib/services/backups'
 
 export async function getBackupsAction(): Promise<BackupFile[]> {
-    await requireUserWithRole(Role.admin)
-    return listBackups()
+    return services.getBackupsAction(await getStudioActor())
 }
 
 export async function createManualBackupAction(): Promise<BackupFile[]> {
-    await requireUserWithRole(Role.admin)
-    await createContentBackup('manual')
-    await pruneOldBackups()
-    return listBackups()
+    return services.createManualBackupAction(await getStudioActor())
 }
 
 export async function restoreBackupAction(filename: string): Promise<{ backups: BackupFile[]; restoredCount: number }> {
-    await requireUserWithRole(Role.admin)
-    await invalidateCollaborationDocuments()
-    const restoredCount = await restoreContentBackup(filename)
-    await invalidateCollaborationDocuments()
-    return {
-        backups: await listBackups(),
-        restoredCount
-    }
+    return services.restoreBackupAction(await getStudioActor(), filename)
 }
 
 export async function deleteBackupAction(filename: string): Promise<BackupFile[]> {
-    await requireUserWithRole(Role.admin)
-    await deleteBackupFile(filename)
-    return listBackups()
+    return services.deleteBackupAction(await getStudioActor(), filename)
 }

@@ -1,5 +1,8 @@
 'use client'
 
+import { replaceStudioDocument } from '@/app/studio/editor/collaboration-actions'
+import { useCollaborationRoom } from '@/app/lib/collaboration/use-room'
+import { persistCollaborationDocument } from '@/app/lib/collaboration/persist'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import type { ComponentData, Data, PuckAction } from '@puckeditor/core'
 import { useGetPuck } from '@puckeditor/core'
@@ -255,12 +258,15 @@ export function usePuckCollaboration({
         }
     }, [])
 
+    const resolvedRoom = useCollaborationRoom(entityId, language, 'puck', enabled)
+
     useEffect(() => {
         if (!enabled) return
         const url = process.env.NEXT_PUBLIC_HOCUSPOCUS_URL
         if (url == null || url.length === 0) return
 
-        const room = `puck-page:${entityId}:${language}`
+        if (!resolvedRoom) return
+        const room = resolvedRoom
         const document = new Y.Doc()
         const indexeddb = new IndexeddbPersistence(`helium:${room}`, document)
         docRef.current = document
@@ -327,7 +333,7 @@ export function usePuckCollaboration({
             setCollaborators([])
             setRemoteCursors([])
         }
-    }, [ applyRemoteDocument, enabled, entityId, language, publishAwareness, userId, userName ])
+    }, [ applyRemoteDocument, enabled, entityId, language, resolvedRoom, publishAwareness, userId, userName ])
 
     const registerPuck = useCallback((getPuck: GetPuck | null) => {
         getPuckRef.current = getPuck
@@ -367,6 +373,10 @@ export function usePuckCollaboration({
     }, [ clearCursor, enabled ])
 
     return {
+        persist: async () => {
+            if (!providerRef.current) throw new Error('Collaboration is unavailable')
+            await persistCollaborationDocument(providerRef.current)
+        },
         clearCursor,
         collaborators,
         registerPuck,
@@ -575,49 +585,6 @@ export async function replacePuckCollaborationDocument({ data, entityId, languag
 }) {
     const url = process.env.NEXT_PUBLIC_HOCUSPOCUS_URL
     if (url == null || url.length === 0) throw new Error('Puck collaboration URL is missing')
-    const document = new Y.Doc()
-    const room = `puck-page:${entityId}:${language}`
-    let resolveSynced: () => void = () => undefined
-    let rejectSynced: (error: Error) => void = () => undefined
-    let resolvePersisted: () => void = () => undefined
-    const synced = new Promise<void>((resolve, reject) => {
-        resolveSynced = resolve
-        rejectSynced = reject
-    })
-    const persisted = new Promise<void>(resolve => {
-        resolvePersisted = resolve
-    })
-    const provider = new HocuspocusProvider({
-        name: room,
-        url,
-        document,
-        token: async () => {
-            const query = new URLSearchParams({ entityId: String(entityId), kind: 'puck', language })
-            const response = await fetch(`/api/collaboration/token?${query}`)
-            if (!response.ok) throw new Error('Unable to authorize Puck collaboration')
-            const result = await response.json() as { token?: string }
-            if (result.token == null) throw new Error('Puck collaboration token is missing')
-            return result.token
-        },
-        onSynced: () => resolveSynced(),
-        onAuthenticationFailed: () => rejectSynced(new Error('Puck collaboration authorization failed')),
-        onUnsyncedChanges: ({ number }) => {
-            if (number === 0) resolvePersisted()
-        }
-    })
-    try {
-        await synced
-        updatePuckYjsDocument(document, data, 'puck-replace-document')
-        if (!provider.hasUnsyncedChanges) resolvePersisted()
-        await Promise.race([
-            persisted,
-            new Promise<never>((_, reject) => window.setTimeout(
-                () => reject(new Error('Timed out while saving collaborative Puck content')),
-                10_000
-            ))
-        ])
-    } finally {
-        provider.destroy()
-        document.destroy()
-    }
+    const result = await replaceStudioDocument(entityId, language, 'puck', data)
+    if (!result.ok) throw new Error('Collaborative Puck replacement could not complete')
 }

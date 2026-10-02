@@ -200,6 +200,7 @@ MFP (指项目): Major Foundation Program
 拓展课程: Enrichment Courses (在这个语境下，包含 学院系列: Academic Series；阅历系列: Experiential Series；雅趣系列: Fine Arts Series；健身系列: Fitness Series；服务系列: Service Series)
 潜能课程: Talent Courses (在这个语境下，包含 领导力系列: Leadership Series；创造力系列: Innovation Series；优势力系列: Arts Series)
 过境免签: transit without visa
+如果有专有名词没有在对照表中列出，请首先在网上搜索其官方英文名称，若没有官方英文名称，请保留中文原名，不要翻译。
 `
 
 export const SANITIZE_LITERAL = `

@@ -17,6 +17,7 @@
     "@hocuspocus/extension-database": "^3.4.4",
     "@hocuspocus/provider": "^3.4.4",
     "@hocuspocus/server": "^3.4.4",
+    "@modelcontextprotocol/server": "^2.2.0",
     "@platejs/basic-nodes": "^53.0.0",
     "@platejs/basic-styles": "^53.0.0",
     "@platejs/comment": "^53.0.0",
@@ -38,6 +39,7 @@
     "flowbite-react": "0.12.17",
     "jose": "^6.2.12",
     "lodash.throttle": "^4.1.1",
+    "mcp-handler": "^2.2.0",
     "md5": "^2.3.0",
     "motion": "^13.3.0",
     "next": "^16.3.5",
@@ -58,6 +60,7 @@
     "tailwind-merge": "^3.7.0",
     "y-indexeddb": "^9.0.12",
     "yjs": "^13.6.32",
+    "zod": "^4.6.5",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

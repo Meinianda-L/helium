@@ -10,21 +10,21 @@ export async function GET(request: NextRequest): Promise<Response> {
         const entityId = Number(request.nextUrl.searchParams.get('entityId'))
         const language = request.nextUrl.searchParams.get('language')
         const kind = request.nextUrl.searchParams.get('kind') === 'puck' ? 'puck' : 'plate'
-        if (!Number.isInteger(entityId) || !Object.values(ContentLanguage).includes(language as ContentLanguage)) {
+        if (!Number.isSafeInteger(entityId) || entityId <= 0 || !Object.values(ContentLanguage).includes(language as ContentLanguage)) {
             return NextResponse.json({ error: 'invalid-request' }, { status: 400 })
         }
         const entity = await prisma.contentEntity.findUnique({
             where: { id: entityId },
-            select: { id: true, type: true }
+            select: { id: true, type: true, collaborationGeneration: true }
         })
         if (entity == null) return NextResponse.json({ error: 'not-found' }, { status: 404 })
-        if (kind === 'puck' && entity.type !== 'page') {
+        if ((kind === 'puck') !== (entity.type === 'page')) {
             return NextResponse.json({ error: 'invalid-document-kind' }, { status: 400 })
         }
 
         const room = kind === 'puck'
-            ? `puck-page:${entityId}:${language}`
-            : `content-entity:${entityId}:${language}`
+            ? `puck-page:${entityId}:${language}:g${entity.collaborationGeneration}`
+            : `content-entity:${entityId}:${language}:g${entity.collaborationGeneration}`
         const token = await new SignJWT({ room, entityId, language })
             .setSubject(String(user.id))
             .setIssuedAt()
@@ -33,7 +33,11 @@ export async function GET(request: NextRequest): Promise<Response> {
             .setExpirationTime('5 minutes')
             .setProtectedHeader({ alg: 'HS256' })
             .sign(new TextEncoder().encode(process.env.JWT_SECRET!))
-        return NextResponse.json({ token })
+        return NextResponse.json({
+            token,
+            room,
+            generation: entity.collaborationGeneration
+        }, { headers: { 'Cache-Control': 'no-store' } })
     } catch {
         return NextResponse.json({ error: 'unauthorized' }, { status: 403 })
     }

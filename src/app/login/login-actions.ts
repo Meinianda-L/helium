@@ -1,8 +1,13 @@
 'use server'
 
-import { Gender, Prisma, Role, User, UserType } from '@/generated/prisma/client'
+import { Role, User } from '@/generated/prisma/client'
+import * as userServices from '@/app/lib/services/users'
+import type { UserFilters } from '@/app/lib/services/users'
+import type { OperationActor } from '@/app/lib/mcp/contracts'
+
+export type { UserFilters } from '@/app/lib/services/users'
 import { me } from '@/app/login/login'
-import { Paginated, SIMPLIFIED_USER_SELECT, SimplifiedUser } from '@/app/lib/data-types'
+import { Paginated, SimplifiedUser } from '@/app/lib/data-types'
 import { prisma } from '@/app/lib/prisma'
 
 export async function getLoginTarget(redirect: string): Promise<string> {
@@ -32,95 +37,23 @@ export async function getMyUser(): Promise<User | null> {
     })
 }
 
+async function studioActor(): Promise<OperationActor> {
+    const user = await requireUser()
+    return { userId: user.id, roles: user.roles, source: 'studio' }
+}
+
 export async function getSimplifiedUser(id: number): Promise<SimplifiedUser | null> {
-    await requireUser()
-    return prisma.user.findUnique({
-        where: { id },
-        select: SIMPLIFIED_USER_SELECT
-    })
+    return userServices.getSimplifiedUser(await studioActor(), id)
 }
 
 export async function getUser(id: number): Promise<User | null> {
-    await requireUserWithRole(Role.admin)
-    return prisma.user.findUnique({
-        where: { id }
-    })
-}
-
-export type UserFilters = {
-    keyword?: string
-    role?: Role | 'all'
-    type?: UserType | 'all'
-    gender?: Gender | 'all'
-    feishu?: 'all' | 'linked' | 'unlinked'
-}
-
-function buildUserWhere(filters: UserFilters = {}): Prisma.UserWhereInput {
-    const keyword = filters.keyword?.trim()
-    const clauses: Prisma.UserWhereInput[] = []
-
-    if (keyword) {
-        const keywordClauses: Prisma.UserWhereInput[] = [
-            { name: { contains: keyword, mode: 'insensitive' } },
-            { pinyin: { contains: keyword, mode: 'insensitive' } },
-            { phone: { contains: keyword, mode: 'insensitive' } }
-        ]
-
-        if (/^\d+$/.test(keyword)) {
-            keywordClauses.push({ id: Number(keyword) })
-        }
-
-        clauses.push({ OR: keywordClauses })
-    }
-
-    if (filters.role && filters.role !== 'all') {
-        clauses.push({ roles: { has: filters.role } })
-    }
-
-    if (filters.type && filters.type !== 'all') {
-        clauses.push({ type: filters.type })
-    }
-
-    if (filters.gender && filters.gender !== 'all') {
-        clauses.push({ gender: filters.gender })
-    }
-
-    if (filters.feishu === 'linked') {
-        clauses.push({ feishuOpenId: { not: null } })
-    } else if (filters.feishu === 'unlinked') {
-        clauses.push({ feishuOpenId: null })
-    }
-
-    return clauses.length > 0 ? { AND: clauses } : {}
+    return userServices.getUser(await studioActor(), id)
 }
 
 export async function getUsers(page: number, filters: UserFilters = {}): Promise<Paginated<User>> {
-    await requireUserWithRole(Role.admin)
-    const where = buildUserWhere(filters)
-    const pageSize = 20
-    const pages = Math.ceil(await prisma.user.count({ where }) / pageSize)
-    const users = await prisma.user.findMany({
-        where,
-        orderBy: [
-            { pinyin: 'asc' },
-            { name: 'asc' }
-        ],
-        skip: page * pageSize,
-        take: pageSize
-    })
-    return {
-        items: users,
-        page,
-        pages
-    }
+    return userServices.getUsers(await studioActor(), page, filters)
 }
 
 export async function updateUserRoles(id: number, roles: Role[]): Promise<User> {
-    await requireUserWithRole(Role.admin)
-    return prisma.user.update({
-        where: { id },
-        data: {
-            roles
-        }
-    })
+    return userServices.updateUserRoles(await studioActor(), id, roles)
 }

@@ -25,9 +25,39 @@ model User {
   ownedEntities ContentEntity[]
   ownedImages   Image[]
 
-  createdCommentThreads  CommentThread[] @relation("CommentThreadCreator")
-  resolvedCommentThreads CommentThread[] @relation("CommentThreadResolver")
+  createdCommentThreads  CommentThread[]       @relation("CommentThreadCreator")
+  resolvedCommentThreads CommentThread[]       @relation("CommentThreadResolver")
   authoredComments       Comment[]
+  personalTokens         PersonalToken[]
+  mcpOperationReceipts   McpOperationReceipt[]
+}
+
+model McpOperationReceipt {
+  id             String   @id @default(cuid())
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  operation      String
+  idempotencyKey String
+  requestHash    String
+  result         Json
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, operation, idempotencyKey])
+}
+
+model PersonalToken {
+  id         String    @id @default(cuid())
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  tokenHash  String    @unique
+  prefix     String
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  @@index([userId, createdAt])
 }
 
 enum Role {
@@ -95,6 +125,7 @@ model UserAuditLog {
 }
 
 model ContentEntity {
+  collaborationGeneration    Int             @default(0)
   id                         Int             @id @default(autoincrement())
   type                       EntityType
   linkOnly                   Boolean         @default(false)

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Role } from '@/generated/prisma/client'
-import { requireUserWithRole } from '@/app/login/login-actions'
-import { readBackupFile } from '@/app/lib/backups'
+import { getStudioActor } from '@/app/lib/services/studio-actor'
+import { downloadBackup } from '@/app/lib/services/backups'
 
 export async function GET(_req: NextRequest, { params }: {
     params: Promise<{ filename: string }>
 }): Promise<Response> {
-    await requireUserWithRole(Role.admin)
+    const actor = await getStudioActor()
     const { filename } = await params
-    const file = await readBackupFile(decodeURIComponent(filename))
+    const file = await downloadBackup(actor, decodeURIComponent(filename))
     const body = new Uint8Array(file)
 
     return new NextResponse(body, {

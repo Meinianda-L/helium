@@ -9,8 +9,11 @@ import { CommentPlugin } from '@platejs/comment/react'
 import { TextAlignPlugin } from '@platejs/basic-styles/react'
 import { SuggestionPlugin } from '@platejs/suggestion/react'
 import { acceptSuggestion, rejectSuggestion } from '@platejs/suggestion'
+import { useCollaborationRoom } from '@/app/lib/collaboration/use-room'
+import type { HocuspocusProvider } from '@hocuspocus/provider'
+import { persistCollaborationDocument } from '@/app/lib/collaboration/persist'
 import { YjsPlugin } from '@platejs/yjs/react'
-import { CursorEditor, relativeRangeToSlateRange, type CursorState } from '@slate-yjs/core'
+import { YjsEditor, CursorEditor, relativeRangeToSlateRange, type CursorState } from '@slate-yjs/core'
 import { toggleBulletedList, toggleNumberedList } from '@platejs/list-classic'
 import { upsertLink } from '@platejs/link'
 import { TablePlugin } from '@platejs/table/react'
@@ -85,6 +88,7 @@ type AwarenessLike = {
 type CollaborationStatus = 'connected' | 'joining' | 'offline'
 
 type YjsProviderState = {
+    provider?: HocuspocusProvider
     isConnected: boolean
     isSynced: boolean
     type: string
@@ -268,6 +272,7 @@ export default function PlateRichTextEditor({
                                                 onDeleteComment,
                                                 onChange,
                                                 onCollaboratorsChange,
+                                                onPersistenceReady,
                                                 onReplyComment,
                                                 onSetCommentResolved,
                                                 readOnly = false,
@@ -286,6 +291,7 @@ export default function PlateRichTextEditor({
     onCreateComment?: (quotedText: string, body: string) => Promise<PuckCommentThread>
     onDeleteComment?: (threadId: string) => Promise<void>
     onChange?: (content: string) => void
+    onPersistenceReady?: (persist: (() => Promise<void>) | null) => void
     onCollaboratorsChange?: (users: PlateCollaborator[]) => void
     onReplyComment?: (threadId: string, body: string) => Promise<void>
     onSetCommentResolved?: (threadId: string, resolved: boolean) => Promise<void>
@@ -308,10 +314,9 @@ export default function PlateRichTextEditor({
     const collaborationUrl = process.env.NEXT_PUBLIC_HOCUSPOCUS_URL
     const collaborationEntityId = collaboration?.entityId
     const collaborationLanguage = collaboration?.language
-    const collaborationRoom = collaborationEntityId == null || collaborationLanguage == null
-        ? null
-        : `content-entity:${collaborationEntityId}:${collaborationLanguage}`
-    const collaborationEnabled = !readOnly && collaborationRoom != null && Boolean(collaborationUrl)
+    const collaborationRequested = !readOnly && collaborationEntityId != null && Boolean(collaborationUrl)
+    const collaborationRoom = useCollaborationRoom(collaborationEntityId, collaborationLanguage, 'plate', collaborationRequested)
+    const collaborationEnabled = collaborationRequested && collaborationRoom != null
     const plugins = useMemo(() => {
         if (!collaborationEnabled || collaborationEntityId == null || collaborationLanguage == null ||
             collaborationRoom == null || collaborationUrl == null) {
@@ -338,7 +343,8 @@ export default function PlateRichTextEditor({
                                     })
                                     const response = await fetch(`/api/collaboration/token?${query}`)
                                     if (!response.ok) throw new Error('Unable to authorize collaboration')
-                                    const result = await response.json() as { token?: string }
+                                    const result = await response.json() as { token?: string; room?: string }
+                                    if (result.room !== collaborationRoom) throw new Error('Refresh the current document generation')
                                     if (result.token == null) throw new Error('Collaboration token is missing')
                                     return result.token
                                 }
@@ -371,14 +377,14 @@ export default function PlateRichTextEditor({
     }, [ collaborationEnabled, collaborationEntityId, collaborationLanguage, collaborationRoom, collaborationUrl,
         currentUserId, currentUserName ])
     const editor = usePlateEditor({
-        id: documentKey,
+        id: `${documentKey}:${collaborationRoom ?? 'joining'}`,
         plugins,
         skipInitialization: collaborationEnabled,
         value: editor => {
             const value = getInitialValue(content, editor).value
             return readOnly ? rejectAllPlateSuggestions(value) : value
         }
-    }, [ documentKey, plugins, readOnly ? content : null ])
+    }, [ documentKey, collaborationRoom, plugins, readOnly ? content : null ])
     const initial = useMemo(() => getInitialValue(content, editor), [ content, editor ])
     const collaborationInitialValue = useMemo(() => getInitialValue(content, editor).value, [ editor ])
     const unresolvedCommentIds = useMemo(() => new Set(commentThreads
@@ -414,6 +420,7 @@ export default function PlateRichTextEditor({
         const cleanUp = () => {
             if (cleaned) return
             cleaned = true
+            onPersistenceReady?.(null)
             awareness?.off('change', publishCollaborators)
             onCollaboratorsChange?.([])
             editor.getApi(YjsPlugin).yjs.destroy()
@@ -433,6 +440,13 @@ export default function PlateRichTextEditor({
                 publishCollaborators()
                 const providers = editor.getOption(YjsPlugin, '_providers') as YjsProviderState[]
                 const remoteProvider = providers.find(provider => provider.type === 'hocuspocus')
+                if (remoteProvider?.provider) {
+                    const provider = remoteProvider.provider
+                    onPersistenceReady?.(async () => {
+                        YjsEditor.flushLocalChanges(editor as unknown as YjsEditor)
+                        await persistCollaborationDocument(provider)
+                    })
+                }
                 setCollaborationStatus(remoteProvider?.isConnected && remoteProvider.isSynced
                     ? 'connected'
                     : 'offline')
@@ -446,7 +460,7 @@ export default function PlateRichTextEditor({
             window.clearTimeout(initializationTimer)
             if (ready) cleanUp()
         }
-    }, [ collaborationEnabled, collaborationInitialValue, collaborationRoom, editor, onCollaboratorsChange ])
+    }, [ collaborationEnabled, collaborationInitialValue, collaborationRoom, editor, onCollaboratorsChange, onPersistenceReady ])
 
     useEffect(() => {
         if (!collaborationEnabled) return
@@ -574,7 +588,7 @@ export default function PlateRichTextEditor({
                         setShowComments(false)
                         setActiveThreadId(null)
                     }}>
-                        <Plate editor={editor} readOnly={readOnly}
+                        <Plate editor={editor} readOnly={readOnly || (collaborationRequested && !collaborationRoom)}
                                onSelectionChange={({ selection }) => {
                                    if (showComments && selection && RangeApi.isExpanded(selection)) {
                                        useSelectionForComment(selection)
@@ -695,7 +709,7 @@ export default function PlateRichTextEditor({
                                     </Dropdown>
                                 </div>}
                                 <PlateContent
-                                    readOnly={readOnly}
+                                    readOnly={readOnly || (collaborationRequested && !collaborationRoom)}
                                     aria-label={readOnly ? '正文预览' : '富文本正文编辑器'}
                                     placeholder={readOnly ? undefined : '输入正文...'}
                                     style={readOnly ? undefined : { boxShadow: 'none', outline: 'none' }}

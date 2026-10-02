@@ -17,21 +17,21 @@ export default async function FeishuCallback({ searchParams }: {
     const { code, error } = await searchParams
 
     if (error) {
-        redirect('/studio/settings/feishu?error=feishu_auth_failed')
+        redirect('/studio/settings?error=feishu_auth_failed')
     }
     if (!code) {
-        redirect('/studio/settings/feishu?error=no_code')
+        redirect('/studio/settings?error=no_code')
     }
 
     try {
         const openId = await exchangeFeishuCode(code)
         await linkFeishuAccount(user.id, openId)
-        redirect('/studio/settings/feishu?success=linked')
+        redirect('/studio/settings?success=linked')
     } catch (error) {
         if (isNextRedirect(error)) {
             throw error
         }
         console.error('Feishu linking failed:', error)
-        redirect('/studio/settings/feishu?error=linking_failed')
+        redirect('/studio/settings?error=linking_failed')
     }
 }

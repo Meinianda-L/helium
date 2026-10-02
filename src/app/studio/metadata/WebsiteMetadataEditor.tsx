@@ -225,10 +225,10 @@ export default function WebsiteMetadataEditor({ init, user, lockToken, pageOptio
         refresh
     } = useSavableEntity({
         initial: init,
-        saveFn: async current => saveWebsiteMetadata(current.entity.id, {
+        saveFn: async (current, previous) => saveWebsiteMetadata(current.entity.id, {
             en: current.en,
             zh: current.zh
-        }),
+        }, previous.entity.updatedAt),
         refreshFn: getWebsiteMetadataEditorState,
         compareKeys: [ 'en', 'zh' ]
     })

@@ -1,16 +1,18 @@
+import { coordinateEditorRequest, pendingEditorReceipts, acknowledgeEditorReceipts } from './mcp-editor-coordinator.mjs'
 import { Server } from '@hocuspocus/server'
 import { Database } from '@hocuspocus/extension-database'
 import { jwtVerify } from 'jose'
 import pg from 'pg'
 import { slateToDeterministicYjsState } from '@platejs/yjs'
 import * as Y from 'yjs'
+import { yTextToSlateElement } from '@slate-yjs/core'
 
 const { Pool } = pg
 const port = Number(process.env.HOCUSPOCUS_PORT ?? 1234)
 const secret = new TextEncoder().encode(process.env.JWT_SECRET)
 const pool = new Pool({ connectionString: process.env.DATABASE_URI })
-const PLATE_ROOM_PATTERN = /^content-entity:(\d+):(en|zh)$/
-const PUCK_ROOM_PATTERN = /^puck-page:(\d+):(en|zh)$/
+const PLATE_ROOM_PATTERN = /^content-entity:(\d+):(en|zh)(?::g(\d+))?$/
+const PUCK_ROOM_PATTERN = /^puck-page:(\d+):(en|zh)(?::g(\d+))?$/
 const COMPONENT_COLLECTION = '__puckComponentCollection'
 const COMPONENT_ITEMS = 'items'
 const COMPONENT_ORDER = 'order'
@@ -18,11 +20,16 @@ const COMPONENT_ORDER = 'order'
 function parseRoom(documentName) {
     const plateMatch = PLATE_ROOM_PATTERN.exec(documentName)
     if (plateMatch != null) {
-        return { entityId: Number(plateMatch[1]), kind: 'plate', language: plateMatch[2] }
+        return {
+            entityId: Number(plateMatch[1]),
+            kind: 'plate',
+            language: plateMatch[2],
+            generation: Number(plateMatch[3] ?? 0)
+        }
     }
     const match = PUCK_ROOM_PATTERN.exec(documentName)
     if (match == null) throw new Error('Invalid collaboration document name')
-    return { entityId: Number(match[1]), kind: 'puck', language: match[2] }
+    return { entityId: Number(match[1]), kind: 'puck', language: match[2], generation: Number(match[3] ?? 0) }
 }
 
 function initialPlateValue(content) {
@@ -108,14 +115,110 @@ function puckDataFromState(state) {
     return fromYValue(document.getMap('data'))
 }
 
+// A room queue serializes explicit saves with debounced saves. Encode inside the
+// queue so an older scheduled callback always saves the current live document.
+const persistenceQueues = new Map()
+
+function persistDocument(documentName, document, userId) {
+    const previous = persistenceQueues.get(documentName) ?? Promise.resolve()
+    const operation = previous.catch(() => {
+    }).then(async () => {
+        const { entityId, kind, language, generation } = parseRoom(documentName)
+        const contentColumn = language === 'en' ? 'contentDraftEN' : 'contentDraftZH'
+        const titleColumn = language === 'en' ? 'titleDraftEN' : 'titleDraftZH'
+        const data = kind === 'puck' ? fromYValue(document.getMap('data'))
+            : yTextToSlateElement(document.get('content', Y.XmlText)).children
+        const content = JSON.stringify(data)
+        const title = kind === 'puck' ? String(data.root?.props?.title ?? '') : null
+        const receipts = pendingEditorReceipts(document)
+        const state = Buffer.from(Y.encodeStateAsUpdate(document))
+        const client = await pool.connect()
+        try {
+            await client.query('BEGIN')
+            if (userId != null) {
+                const user = await client.query('SELECT "roles" FROM "User" WHERE "id" = $1', [ userId ])
+                if (!user.rows[0]?.roles?.includes('writer')) throw new Error('Insufficient collaboration permission')
+            }
+            const entity = await client.query(`SELECT "type", "collaborationGeneration", "${contentColumn}" AS content,
+                "${titleColumn}" AS title FROM "ContentEntity" WHERE "id" = $1 FOR UPDATE`, [ entityId ])
+            if (entity.rowCount !== 1 || (entity.rows[0].type === 'page') !== (kind === 'puck')) {
+                throw new Error('Collaboration document type mismatch')
+            }
+            if (Number(entity.rows[0].collaborationGeneration ?? 0) !== generation) throw new Error('Stale collaboration generation')
+            await client.query(`INSERT INTO "YjsDocument"
+                ("name", "entityId", "language", "state", "createdAt", "updatedAt")
+                VALUES ($1, $2, $3::"ContentLanguage", $4, NOW(), NOW())
+                ON CONFLICT ("entityId", "language") DO UPDATE SET "name" = EXCLUDED."name", "state" = EXCLUDED."state", "updatedAt" = NOW()`,
+                [ documentName, entityId, language, state ])
+            if (entity.rows[0].content !== content || (kind === 'puck' && entity.rows[0].title !== title)) {
+                await client.query(`UPDATE "ContentEntity" SET "${contentColumn}" = $1,
+                    ${kind === 'puck' ? `"${titleColumn}" = $3,` : ''} "updatedAt" = NOW() WHERE "id" = $2`,
+                    kind === 'puck' ? [ content, entityId, title ] : [ content, entityId ])
+                await client.query('DELETE FROM "Approval" WHERE "entityId" = $1', [ entityId ])
+                if (!receipts.length) await client.query(`INSERT INTO "UserAuditLog" ("time", "type", "userId", "values")
+                    VALUES (NOW(), 'writerEditEntity', $1, $2)`,
+                    [ userId ?? null, [ String(entityId), `collaboration:${language}` ] ])
+            }
+            for (const receipt of receipts) {
+                await client.query(`INSERT INTO "UserAuditLog" ("time", "type", "userId", "values")
+                    VALUES (NOW(), 'writerEditEntity', $1, $2)`,
+                    [ receipt.userId, [ String(entityId), `mcp:${language}`, receipt.idempotencyKey ] ])
+                await client.query(`INSERT INTO "McpOperationReceipt"
+                    ("id", "userId", "operation", "idempotencyKey", "requestHash", "result", "createdAt")
+                    VALUES ($1, $2, $3, $4, $5, $6::jsonb, NOW())
+                    ON CONFLICT ("userId", "operation", "idempotencyKey") DO NOTHING`,
+                    [ receipt.id, receipt.userId, receipt.operation, receipt.idempotencyKey,
+                        receipt.requestHash, JSON.stringify(receipt.result) ])
+            }
+            await client.query('COMMIT')
+            acknowledgeEditorReceipts(document, receipts)
+        } catch (error) {
+            await client.query('ROLLBACK')
+            throw error
+        } finally {
+            client.release()
+        }
+    })
+    persistenceQueues.set(documentName, operation)
+    void operation.finally(() => {
+        if (persistenceQueues.get(documentName) === operation) persistenceQueues.delete(documentName)
+    }).catch(() => {
+    })
+    return operation
+}
+
 const server = new Server({
     address: '0.0.0.0',
     port,
     debounce: 1000,
     maxDebounce: 5000,
+    async beforeHandleMessage({ document, documentName }) {
+        const room = parseRoom(documentName)
+        const current = await pool.query('SELECT "collaborationGeneration" FROM "ContentEntity" WHERE "id" = $1', [ room.entityId ])
+        if (!current.rowCount || Number(current.rows[0].collaborationGeneration) !== room.generation) throw new Error('Stale collaboration generation')
+        if (document.mcpReplacing || document.mcpFenced) throw new Error('Document generation is being replaced')
+    },
+    async onStateless({ connection, documentName, document, payload }) {
+        let request
+        try {
+            request = JSON.parse(payload)
+        } catch {
+            return
+        }
+        if (request.type !== 'persist' || typeof request.requestId !== 'string' || request.requestId.length > 100) return
+        try {
+            if (connection.context?.userId == null) throw new Error('Writer authentication required')
+            await persistDocument(documentName, document, connection.context.userId)
+            connection.sendStateless(JSON.stringify({ type: 'persisted', requestId: request.requestId }))
+        } catch (error) {
+            console.error('Collaborative persistence failed:', error)
+            connection.sendStateless(JSON.stringify({ type: 'persistence-error', requestId: request.requestId }))
+        }
+    },
     async onRequest({ request, response, instance }) {
-        if (new URL(request.url ?? '/', 'http://localhost').pathname !== '/invalidate') return
-        if (request.method !== 'POST' || request.headers['x-collaboration-secret'] !== process.env.JWT_SECRET) {
+        const path = new URL(request.url ?? '/', 'http://localhost').pathname
+        if (![ '/invalidate', '/mcp/editor' ].includes(path)) return
+        if (!process.env.JWT_SECRET || request.method !== 'POST' || request.headers['x-collaboration-secret'] !== process.env.JWT_SECRET) {
             response.writeHead(401)
             response.end()
             throw null
@@ -139,6 +242,44 @@ const server = new Server({
             response.end()
             throw null
         }
+        if (path === '/mcp/editor') {
+            try {
+                if (![ 'read', 'edit', 'replace' ].includes(payload.action) || !payload.input ||
+                    ![ 'plate', 'puck' ].includes(payload.input.editor) ||
+                    ![ 'en', 'zh' ].includes(payload.input.language) ||
+                    !Number.isSafeInteger(payload.input.entityId) || payload.input.entityId <= 0 ||
+                    !Number.isSafeInteger(payload.actor?.userId) || (payload.actor?.source !== 'studio' && !payload.actor?.tokenId) ||
+                    (payload.action === 'edit' && (!Array.isArray(payload.input.commands) ||
+                        !payload.input.commands.length || payload.input.commands.length > 100 ||
+                        typeof payload.input.idempotencyKey !== 'string'))) {
+                    response.writeHead(400)
+                    response.end()
+                    throw null
+                }
+                const result = await coordinateEditorRequest({
+                    pool,
+                    instance,
+                    persistDocument,
+                    actor: payload.actor,
+                    input: payload.input,
+                    action: payload.action
+                })
+                response.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+                response.end(JSON.stringify(result))
+            } catch (error) {
+                if (error === null) throw null
+                console.error('MCP editor coordinator failed:', error)
+                response.writeHead(503)
+                response.end(JSON.stringify({
+                    ok: false,
+                    error: {
+                        code: 'storage_unavailable',
+                        message: 'Collaborative edit could not be confirmed. Retry with the same key.'
+                    }
+                }))
+            }
+            throw null
+        }
         if (payload.all !== true) {
             response.writeHead(400)
             response.end()
@@ -152,6 +293,7 @@ const server = new Server({
         throw null
     },
     async onAuthenticate({ documentName, token }) {
+        if (!/:g\d+$/.test(documentName)) throw new Error('Refresh the collaboration client for generation-aware rooms')
         const room = parseRoom(documentName)
         const { payload } = await jwtVerify(token, secret, {
             issuer: 'helium-next',
@@ -160,6 +302,8 @@ const server = new Server({
         if (payload.room !== documentName || payload.entityId !== room.entityId || payload.language !== room.language) {
             throw new Error('Collaboration token does not match the requested document')
         }
+        const current = await pool.query('SELECT "collaborationGeneration" FROM "ContentEntity" WHERE "id" = $1', [ room.entityId ])
+        if (!current.rowCount || Number(current.rows[0].collaborationGeneration) !== room.generation) throw new Error('Stale collaboration generation')
         const userId = Number(payload.sub)
         const result = await pool.query('SELECT "roles" FROM "User" WHERE "id" = $1', [ userId ])
         if (!result.rows[0]?.roles?.includes('writer')) throw new Error('Insufficient collaboration permission')
@@ -168,13 +312,16 @@ const server = new Server({
     extensions: [
         new Database({
             async fetch({ documentName }) {
+                const room = parseRoom(documentName)
+                const current = await pool.query('SELECT "collaborationGeneration" FROM "ContentEntity" WHERE "id" = $1', [ room.entityId ])
+                if (!current.rowCount || Number(current.rows[0].collaborationGeneration) !== room.generation) throw new Error('Stale collaboration generation')
                 const stored = await pool.query(
                     'SELECT "state" FROM "YjsDocument" WHERE "name" = $1',
                     [ documentName ]
                 )
                 if (stored.rows[0]?.state != null) return new Uint8Array(stored.rows[0].state)
 
-                const { entityId, kind, language } = parseRoom(documentName)
+                const { entityId, kind, language, generation } = parseRoom(documentName)
                 const contentColumn = language === 'en' ? 'contentDraftEN' : 'contentDraftZH'
                 const entity = await pool.query(
                     `SELECT "${contentColumn}" AS "content", "type" FROM "ContentEntity" WHERE "id" = $1`,
@@ -185,38 +332,12 @@ const server = new Server({
                     if (entity.rows[0].type !== 'page') throw new Error('Puck collaboration requires a page entity')
                     return initialPuckState(entity.rows[0].content)
                 }
+                if (entity.rows[0].type === 'page') throw new Error('Plate collaboration requires a rich text entity')
                 return slateToDeterministicYjsState(documentName, initialPlateValue(entity.rows[0].content))
             },
-            async store({ documentName, state }) {
-                const { entityId, kind, language } = parseRoom(documentName)
-                const client = await pool.connect()
-                try {
-                    await client.query('BEGIN')
-                    await client.query(`
-                        INSERT INTO "YjsDocument"
-                            ("name", "entityId", "language", "state", "createdAt", "updatedAt")
-                        VALUES ($1, $2, $3::"ContentLanguage", $4, NOW(), NOW())
-                        ON CONFLICT ("name") DO UPDATE
-                        SET "state" = EXCLUDED."state", "updatedAt" = NOW()
-                    `, [ documentName, entityId, language, Buffer.from(state) ])
-                    if (kind === 'puck') {
-                        const data = puckDataFromState(state)
-                        const contentColumn = language === 'en' ? 'contentDraftEN' : 'contentDraftZH'
-                        const titleColumn = language === 'en' ? 'titleDraftEN' : 'titleDraftZH'
-                        const title = typeof data.root?.props?.title === 'string' ? data.root.props.title : ''
-                        await client.query(`
-                            UPDATE "ContentEntity"
-                            SET "${contentColumn}" = $1, "${titleColumn}" = $2, "updatedAt" = NOW()
-                            WHERE "id" = $3
-                        `, [ JSON.stringify(data), title, entityId ])
-                    }
-                    await client.query('COMMIT')
-                } catch (error) {
-                    await client.query('ROLLBACK')
-                    throw error
-                } finally {
-                    client.release()
-                }
+            async store({ documentName, document, context }) {
+                await persistDocument(documentName, document, context?.userId)
+
             }
         })
     ]

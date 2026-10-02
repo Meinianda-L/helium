@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { randomUUID } from 'node:crypto'
 import { EntityType, Prisma } from '@/generated/prisma/client'
 import { prisma } from '@/app/lib/prisma'
 
@@ -337,11 +338,13 @@ export async function listBackups(): Promise<BackupFile[]> {
     return backups.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 }
 
-export async function readBackupFile(filename: string): Promise<Buffer> {
+export async function readBackupFile(filename: string, maxBytes = Number.POSITIVE_INFINITY): Promise<Buffer> {
     if (!isBackupFilename(filename)) {
         throw new Error('Invalid backup filename.')
     }
-    return fs.readFile(path.join(await getBackupDir(), filename))
+    const file = path.join(await getBackupDir(), filename)
+    if ((await fs.stat(file)).size > maxBytes) throw new Error('Backup exceeds transfer limit')
+    return fs.readFile(file)
 }
 
 export async function deleteBackupFile(filename: string): Promise<void> {
@@ -351,7 +354,7 @@ export async function deleteBackupFile(filename: string): Promise<void> {
     await fs.unlink(path.join(await getBackupDir(), filename))
 }
 
-export async function createContentBackup(mode: 'automatic' | 'manual'): Promise<BackupResult> {
+export async function createContentBackup(mode: 'automatic' | 'manual', retryFilename?: string): Promise<BackupResult> {
     const now = new Date()
     const dir = await getBackupDir()
     const autoName = `${BACKUP_PREFIX}-auto-${formatDateStamp(now)}.zip`
@@ -367,9 +370,17 @@ export async function createContentBackup(mode: 'automatic' | 'manual'): Promise
         }
     }
 
-    const filename = mode === 'automatic'
+    if (retryFilename && !isBackupFilename(retryFilename)) throw new Error('Invalid backup filename')
+    if (retryFilename) {
+        try {
+            await fs.access(path.join(dir, retryFilename))
+            return { backup: await backupFileFromName(retryFilename), created: false }
+        } catch {
+        }
+    }
+    const filename = retryFilename ?? (mode === 'automatic'
         ? autoName
-        : `${BACKUP_PREFIX}-manual-${formatTimestamp(now)}.zip`
+        : `${BACKUP_PREFIX}-manual-${formatTimestamp(now)}.zip`)
     const entities = await prisma.contentEntity.findMany({
         orderBy: { id: 'asc' },
         select: BACKUP_CONTENT_ENTITY_SELECT
@@ -382,7 +393,13 @@ export async function createContentBackup(mode: 'automatic' | 'manual'): Promise
             modifiedAt: now
         }
     })
-    await fs.writeFile(path.join(dir, filename), createZip(entries))
+    const temporary = path.join(dir, `${filename}.${randomUUID()}.tmp`)
+    try {
+        await fs.writeFile(temporary, createZip(entries), { flag: 'wx' })
+        await fs.rename(temporary, path.join(dir, filename))
+    } finally {
+        await fs.rm(temporary, { force: true })
+    }
     return {
         backup: await backupFileFromName(filename),
         created: true
@@ -463,12 +480,18 @@ export async function restoreContentBackup(filename: string): Promise<number> {
     }
 
     await prisma.$transaction(async tx => {
+        const epochs = await tx.$queryRaw<{
+            generation: number
+        }[]>`SELECT nextval('"CollaborationGenerationSequence"')::integer AS generation`
         await tx.approval.deleteMany()
         await tx.entityLock.deleteMany()
         await tx.contentEntity.deleteMany()
         if (entities.length > 0) {
             await tx.contentEntity.createMany({
-                data: entities.map(toRestoreData)
+                data: entities.map(entity => ({
+                    ...toRestoreData(entity),
+                    collaborationGeneration: epochs[0].generation
+                }))
             })
             await tx.$executeRaw`SELECT setval(pg_get_serial_sequence('"ContentEntity"', 'id'), ${Math.max(...entities.map(entity => entity.id))}, true)`
         }

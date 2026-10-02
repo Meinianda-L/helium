@@ -6,9 +6,10 @@ import { Button } from 'flowbite-react'
 import { HiCheckCircle, HiLink } from 'react-icons/hi2'
 import { getFeishuAuthUrl } from '@/app/studio/settings/feishu/feishu-actions'
 
-export default function FeishuSettings({ isLinked, result }: {
+export default function FeishuSettings({ isLinked, result, embedded = false }: {
     isLinked: boolean
     result?: { success?: string; error?: string }
+    embedded?: boolean
 }) {
     const [ authUrl, setAuthUrl ] = useState('')
     const [ authError, setAuthError ] = useState(false)
@@ -38,8 +39,8 @@ export default function FeishuSettings({ isLinked, result }: {
                 ? { success: false, message: '飞书应用配置不完整。' }
                 : null
 
-    return <div className="p-16">
-        <h1 className="text-2xl mb-8">飞书设置</h1>
+    return <section aria-label="飞书设置" className={embedded ? '' : 'p-16'}>
+        {embedded ? <h2 className="text-xl mb-6">飞书设置</h2> : <h1 className="text-2xl mb-8">飞书设置</h1>}
 
         <div className="bg-gray-50 rounded-3xl p-8 space-y-6 max-w-2xl">
             <div>
@@ -83,5 +84,5 @@ export default function FeishuSettings({ isLinked, result }: {
                 )}
             </div>
         </div>
-    </div>
+    </section>
 }

@@ -135,9 +135,9 @@ export default function StudioShell({ children, myUser }: { children: ReactNode;
                                         </SidebarItem>
                                     </Link>
                                 </SidebarCollapse>
-                                <Link href="/studio/settings/feishu">
+                                <Link href="/studio/settings">
                                     <SidebarItem as="div" icon={HiCog}>
-                                        飞书设置
+                                        个人设置
                                     </SidebarItem>
                                 </Link>
                                 <If condition={myUser?.roles.includes(Role.admin)}>

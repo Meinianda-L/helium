@@ -1,26 +1,20 @@
 'use server'
 
-import { Role } from '@/generated/prisma/client'
-import { requireUserWithRole } from '@/app/login/login-actions'
-import {
-    cancelWeChatTask,
-    listWeChatTasks,
-    retryWeChatTask,
-    startWeChatTasks
-} from '@/app/lib/wechat/wechat-tasks'
+import { getStudioActor } from '@/app/lib/services/studio-actor'
+import * as services from '@/app/lib/services/wechat'
 
 export async function getWeChatTasks() {
-    return listWeChatTasks(await requireUserWithRole(Role.writer))
+    return services.getWeChatTasks(await getStudioActor())
 }
 
 export async function createPostsFromWeChat(input: string, coverImageId: number | null) {
-    return startWeChatTasks(input, coverImageId, await requireUserWithRole(Role.writer))
+    return services.createPostsFromWeChat(await getStudioActor(), input, coverImageId)
 }
 
 export async function deleteWeChatTask(id: string) {
-    await cancelWeChatTask(id, await requireUserWithRole(Role.writer))
+    return services.deleteWeChatTask(await getStudioActor(), id)
 }
 
 export async function retryFailedWeChatTask(id: string) {
-    return retryWeChatTask(id, await requireUserWithRole(Role.writer))
+    return services.retryFailedWeChatTask(await getStudioActor(), id)
 }
