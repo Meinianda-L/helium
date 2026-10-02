@@ -51,10 +51,11 @@ To run in development:
 6. Run `prisma generate` to generate the Prisma client.
 7. Run [decorative-image-classifier](https://github.com/WebArtistryBAID/decorative-image-classifier) concurrently to
    support WeChat content imports. This external service automatically removes decorative images from WeChat posts to
-   enable easier editing.
-8. Run a development server of [LinkBAID](https://github.com/WebArtistryBAID/baid-onelogin) to support authentication or
+   enable easier editing. (This isn't strictly necessary.)
+8. Gain access to the production Feishu Aily app and Feishu notification apps by asking your school point of contact.
+   (This isn't strictly necessary.)
+9. Run a development server of [LinkBAID](https://github.com/WebArtistryBAID/baid-onelogin) to support authentication or
    use the official LinkBAID server by informing your school point of contact.
-9. Gain access to the production Feishu Aily app and Feishu notification apps by asking your school point of contact.
 10. Fill the remaining environment variables.
 11. Run `npm run dev` to start the development server.
 
